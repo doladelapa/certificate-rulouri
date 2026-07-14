@@ -200,6 +200,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 const LS_CFG = "cert_cfg_v1";
 const INDEX_FILE = "_index-rulouri.json";
 let cfg = JSON.parse(localStorage.getItem(LS_CFG) || "null");
+/* Config implicit — valabil pentru toți colegii; Client ID și tenant nu sunt secrete
+   (securitatea o face login-ul Microsoft + drepturile fiecăruia din SharePoint). */
+const DEFAULT_CFG = {
+  client: "89f5aec6-a69e-4024-ad43-cbc9ccc2fbb5",
+  tenant: "b319080a-7e7a-4086-9913-1dfdd1c52e17",
+  folder: "https://doladelacompany.sharepoint.com/sites/comm/Documente partajate/CERTIFICATE DE CALITATE/RULOU ZINCAT"
+};
+if(!cfg) cfg = DEFAULT_CFG;
 let msalApp = null, account = null;
 let folderRef = null;          // {driveId, itemId, webUrl}
 let INDEX = null;              // {ver, updated, files:{}, rows:[], pageIds:{}}
