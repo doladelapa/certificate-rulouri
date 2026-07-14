@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Certificate de calitate — căutare rulouri</title>
 <!-- ATENȚIE: acest fișier NU conține date ale firmei. Datele (PDF-uri + index) stau DOAR pe SharePoint. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/msal-browser/2.38.3/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -646,6 +646,10 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("vClose").click
 
 /* pornire */
 (async ()=>{
+  if(typeof msal === "undefined"){
+    document.querySelector("main").innerHTML = '<div class="card"><h2>Nu s-a putut încărca biblioteca de autentificare</h2><p>Verifică conexiunea la internet și reîncarcă pagina (Ctrl+F5). Dacă persistă, rețeaua firmei blochează cdn.jsdelivr.net — spune-i administratorului.</p></div>';
+    return;
+  }
   if(!cfg){ showSetup(false); return; }
   try{ await initMsal(); await afterLogin(); }
   catch(_){ initMsalOnly(); $("btnLogin").style.display="inline-block"; }
