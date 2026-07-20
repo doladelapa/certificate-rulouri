@@ -172,7 +172,7 @@ tr:hover .pagebtn{border-color:var(--accent);background:#fff}
       <label>Culoare</label><select id="fCuloare"><option value="">toate</option></select>
       <label>Calitate</label><select id="fG"><option value="">toate</option></select>
       <label>Producător</label><select id="fP"><option value="">toți</option></select>
-      <label>Kg</label><input id="fKgMin" placeholder="min" inputmode="numeric"><span style="color:var(--faint)">–</span><input id="fKgMax" placeholder="max" inputmode="numeric">
+      <label>Kg</label><input id="fKg" placeholder="ex. 5480" inputmode="numeric">
       <button class="fclear" id="fClear">șterge filtrele</button>
     </div>
     <div id="stats"></div>
@@ -526,7 +526,7 @@ function doSearch(){
   if(!INDEX) return;
   const q = $("q").value.trim();
   const fT=$("fT").value, fZ=$("fZ").value, fG=$("fG").value, fP=$("fP").value, fCat=$("fCat").value, fCul=$("fCuloare").value;
-  const kmin = parseFloat($("fKgMin").value)||null, kmax = parseFloat($("fKgMax").value)||null;
+  const fKg = $("fKg").value.trim().replace(/\D/g,"");
   const qDigits = q.replace(/\D/g,"");
   const isIdQ = qDigits.length >= 4 && qDigits.length === q.replace(/\s/g,"").length;
 
@@ -539,8 +539,7 @@ function doSearch(){
     if(fG && r.grade!==fG) continue;
     if(fP && r.prod!==fP) continue;
     if(fCat && r.categorie!==fCat) continue;
-    if(kmin!=null && (r.kg==null || r.kg<kmin)) continue;
-    if(kmax!=null && (r.kg==null || r.kg>kmax)) continue;
+    if(fKg && !(r.kg!=null && String(Math.round(r.kg)).includes(fKg))) continue;
     if(q){
       if(isIdQ){ if(!String(r.id).includes(qDigits)) continue; }
       else {
@@ -568,7 +567,7 @@ function doSearch(){
     const withRows = new Set(INDEX.rows.map(r=>r[9]));
     for(const [fid, f] of Object.entries(INDEX.files)){
       if(withRows.has(fid)) continue;
-      if(fT || fZ || fCul || fG || kmin!=null || kmax!=null) continue; // filtre pe date de rulou nu se pot aplica unui fișier fără rânduri
+      if(fT || fZ || fCul || fG || fKg) continue; // filtre pe date de rulou nu se pot aplica unui fișier fără rânduri
       if(fP && f.prod!==fP) continue;
       if(fCat && f.cat!==fCat) continue;
       if(q){
@@ -739,10 +738,10 @@ $("btnLogin").onclick = ()=>{ initMsalOnly(); login(); };
 $("btnScan").onclick = ()=> $("scanPanel").classList.toggle("open");
 $("scanStart").onclick = runScan;
 $("scanStop").onclick = ()=>{ scanAbort = true; };
-["q","fT","fZ","fCuloare","fG","fP","fCat","fKgMin","fKgMax"].forEach(id=>{
+["q","fT","fZ","fCuloare","fG","fP","fCat","fKg"].forEach(id=>{
   $(id).addEventListener("input", ()=>{ clearTimeout(window._dq); window._dq = setTimeout(doSearch, 180); });
 });
-$("fClear").onclick = ()=>{ ["fT","fZ","fCuloare","fG","fP","fCat"].forEach(i=>$(i).value=""); ["fKgMin","fKgMax","q"].forEach(i=>$(i).value=""); doSearch(); };
+$("fClear").onclick = ()=>{ ["fT","fZ","fCuloare","fG","fP","fCat","fKg"].forEach(i=>$(i).value=""); $("q").value=""; doSearch(); };
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("vClose").click(); });
 
 /* pornire */
