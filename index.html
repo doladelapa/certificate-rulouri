@@ -203,7 +203,7 @@ tr:hover .pagebtn{border-color:var(--accent);background:#fff}
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 /* ═══════════ config & stare ═══════════ */
-const LS_CFG = "cert_cfg_v1";
+const LS_CFG = "cert_cfg_v2";
 const INDEX_FILE = "_index-rulouri.json";
 let cfg = JSON.parse(localStorage.getItem(LS_CFG) || "null");
 /* Config implicit — valabil pentru toți colegii; Client ID și tenant nu sunt secrete
@@ -214,6 +214,10 @@ const DEFAULT_CFG = {
   folder: "https://doladelacompany.sharepoint.com/sites/comm/Documente partajate/CERTIFICATE DE CALITATE"
 };
 if(!cfg) cfg = DEFAULT_CFG;
+/* Setările (Client ID / Tenant / folder) sunt fixe pentru toți colegii — nu pot fi deschise sau
+   modificate din interfața obișnuită, ca să nu poată fi greșite din greșeală. Doar administratorul,
+   folosind linkul cu ?admin=1, poate deschide panoul de configurare. */
+const ADMIN_MODE = new URLSearchParams(location.search).get("admin") === "1";
 let msalApp = null, account = null;
 let folderRef = null;          // {driveId, itemId, webUrl}
 let INDEX = null;              // {ver, updated, files:{}, rows:[], pageIds:{}}
@@ -645,15 +649,20 @@ function refreshUI(){
 async function afterLogin(){
   $("btnLogin").style.display = "none";
   $("btnScan").style.display = "inline-block";
-  $("btnSettings").style.display = "inline-block";
+  if(ADMIN_MODE) $("btnSettings").style.display = "inline-block";
   $("userBadge").textContent = account.username;
   $("setupCard").style.display = "none";
   try{
     await resolveFolder();
     await loadIndex();
   }catch(e){
-    toast("Nu pot deschide folderul de certificate: "+e.message);
-    showSetup(true);
+    if(ADMIN_MODE){
+      toast("Nu pot deschide folderul de certificate: "+e.message);
+      showSetup(true);
+    } else {
+      $("searchArea").style.display = "none";
+      document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="card"><h2>Nu pot deschide folderul de certificate</h2><p>Anunță-l pe administrator (Ionuț) — s-ar putea să se fi schimbat ceva la folderul de pe SharePoint. Eroare: ${esc(e.message)}</p></div>`);
+    }
   }
 }
 function showSetup(cancelable){
@@ -692,7 +701,11 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("vClose").click
     document.querySelector("main").innerHTML = '<div class="card"><h2>Nu s-a putut încărca biblioteca de autentificare</h2><p>Verifică conexiunea la internet și reîncarcă pagina (Ctrl+F5). Dacă persistă, rețeaua firmei blochează cdn.jsdelivr.net — spune-i administratorului.</p></div>';
     return;
   }
-  if(!cfg){ showSetup(false); return; }
+  if(!cfg){
+    if(ADMIN_MODE) showSetup(false);
+    else document.querySelector("main").insertAdjacentHTML("beforeend", '<div class="card"><h2>Configurare lipsă</h2><p>Anunță-l pe administrator (Ionuț).</p></div>');
+    return;
+  }
   try{ await initMsal(); await afterLogin(); }
   catch(_){ initMsalOnly(); $("btnLogin").style.display="inline-block"; }
 })();
