@@ -340,11 +340,15 @@ function guessProducer(path, text){
   if(p.includes("TEZCAN")) return "Tezcan (TR)";
   if(p.includes("PRABHAT") || p.includes("PRAHBAT")) return "Prabhat (IN)";
   if(p.includes("STEELOX")) return "Steelox";
+  if(p.includes("JAOHAR")) return "Jaohar";
+  if(p.includes("DELTA STEEL")) return "Delta Steel";
+  if(p.includes("EUROPE METAL")) return "Europe Metal Trade";
   if(/TATMETAL/i.test(text)) return "Tatmetal (TR)";
   if(/MARCEGAGLIA/i.test(text)) return "Marcegaglia (IT)";
   if(/TEZCAN/i.test(text)) return "Tezcan (TR)";
   if(/PRABHAT|PRAHBAT/i.test(text)) return "Prabhat (IN)";
   if(/STEELOX/i.test(text)) return "Steelox";
+  if(/JAOHAR/i.test(text)) return "Jaohar";
   return "necunoscut";
 }
 /* — parsează o pagină: rânduri structurate + toate ID-urile numerice — */
@@ -463,14 +467,14 @@ async function runScan(){
         INDEX.rows = INDEX.rows.filter(r=>r[9]!==f.id);
         INDEX.pageIds[f.id] = {};
         let rowsInFile = 0;
-        let producer = guessProducer(f.path, "");
+        let producer = guessProducer(f.path+"/"+f.name, "");
         const categorie = /PREVOPSIT/i.test(f.path) ? "Prevopsit" : /ZINCAT/i.test(f.path) ? "Zincat" : "necunoscut";
         for(let pg=1; pg<=pdf.numPages; pg++){
           const page = await pdf.getPage(pg);
           const tc = await page.getTextContent();
           const lines = pageLines(tc);
           const fullText = lines.join("\n");
-          if(producer==="necunoscut") producer = guessProducer(f.path, fullText);
+          if(producer==="necunoscut") producer = guessProducer(f.path+"/"+f.name, fullText);
           const { rows, ids } = parsePage(lines, fullText, producer);
           for(const r of rows){
             INDEX.rows.push([r.id, r.kg, r.t, r.w, r.coat, r.grade, r.re, r.rm, r.a, f.id, pg, r.cert, producer, categorie, r.culoare||null]);
