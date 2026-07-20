@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certificate de calitate — căutare rulouri</title>
+<!-- ATENȚIE: acest fișier NU conține date ale firmei. Datele (PDF-uri + index) stau DOAR pe SharePoint. -->
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14171c; --panel:#1b2027; --panel2:#20262f; --line:#2b323c;
+  --text:#d7dde4; --muted:#8d97a3; --faint:#5b6570;
+  --accent:#ff7a1a; --accent-dim:#b35410; --ok:#3fb970; --warn:#e8b93a; --err:#e05d5d;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.45}
+button{font-family:var(--sans);cursor:pointer}
+input,select{font-family:var(--sans)}
+.mono{font-family:var(--mono)}
+
+/* ── antet ─────────────────────────────── */
+header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:2px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .mark{width:34px;height:34px;border:2px solid var(--accent);border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:600;color:var(--accent);font-size:13px}
+.logo h1{font-size:15px;font-weight:600;letter-spacing:.4px}
+.logo small{display:block;color:var(--muted);font-weight:400;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase}
+.hspacer{flex:1}
+.hbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 12px;border-radius:6px;font-size:13px}
+.hbtn:hover{border-color:var(--accent)}
+.hbtn.acc{background:var(--accent);border-color:var(--accent);color:#14171c;font-weight:600}
+.hbtn.acc:hover{background:#ff8d3d}
+.hbtn:disabled{opacity:.45;cursor:default}
+#userBadge{font-size:12.5px;color:var(--muted)}
+#idxBadge{font-size:12px;color:var(--muted);font-family:var(--mono)}
+#idxBadge b{color:var(--text)}
+
+main{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+
+/* ── ecran conectare / setări ─────────── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;max-width:640px;margin:40px auto}
+.card h2{font-size:17px;margin-bottom:6px}
+.card p{color:var(--muted);font-size:13.5px;margin-bottom:14px}
+.frow{margin-bottom:12px}
+.frow label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.frow input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px;font-family:var(--mono)}
+.frow input:focus{outline:none;border-color:var(--accent)}
+.hint{font-size:12px;color:var(--faint);margin-top:4px}
+
+/* ── căutare ───────────────────────────── */
+.searchbox{display:flex;gap:0;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);transition:border-color .15s}
+.searchbox:focus-within{border-color:var(--accent)}
+.searchbox .icon{display:grid;place-items:center;padding:0 14px;color:var(--faint);font-size:19px}
+#q{flex:1;background:transparent;border:none;color:var(--text);font-size:20px;padding:16px 4px;font-family:var(--mono);letter-spacing:.5px}
+#q:focus{outline:none}
+#q::placeholder{color:var(--faint);font-size:16px;letter-spacing:0;font-family:var(--sans)}
+.filters{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px;align-items:center}
+.filters select,.filters input{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:7px 9px;font-size:13px}
+.filters input{width:96px;font-family:var(--mono)}
+.filters label{font-size:12px;color:var(--muted)}
+.fclear{background:none;border:none;color:var(--accent);font-size:12.5px;text-decoration:underline}
+#stats{margin:16px 2px 8px;font-size:13px;color:var(--muted)}
+#stats b{color:var(--text);font-family:var(--mono)}
+
+/* ── tabel rezultate ───────────────────── */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+tbody td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--panel2)}
+td.id{font-family:var(--mono);font-weight:600;color:#fff}
+td.num{font-family:var(--mono);text-align:right}
+td.file{color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.pagebtn{background:var(--panel2);border:1px solid var(--line);color:var(--accent);font-family:var(--mono);font-weight:600;padding:4px 10px;border-radius:6px;font-size:12.5px}
+tr:hover .pagebtn{border-color:var(--accent)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11.5px;font-family:var(--mono);background:var(--panel2);border:1px solid var(--line)}
+.src-page{color:var(--warn)}
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.empty .big{font-size:38px;margin-bottom:10px;opacity:.4}
+
+/* ── vizualizator pagină ───────────────── */
+#viewer{position:fixed;inset:0;background:rgba(10,12,15,.92);z-index:50;display:none;flex-direction:column}
+#viewer.open{display:flex}
+.vhead{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.vhead .title{font-family:var(--mono);font-size:13.5px}
+.vhead .title b{color:var(--accent)}
+.vhead .sub{font-size:12px;color:var(--muted);width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vbody{flex:1;overflow:auto;display:grid;place-items:center;padding:18px}
+#pgCanvas{background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.6);max-width:none}
+.vload{color:var(--muted);font-size:14px}
+
+/* ── scanare ───────────────────────────── */
+#scanPanel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:22px;display:none}
+#scanPanel.open{display:block}
+#scanPanel h3{font-size:14.5px;margin-bottom:4px}
+#scanPanel p{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.progress{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin:10px 0}
+.progress i{display:block;height:100%;background:var(--accent);width:0%;transition:width .3s}
+#scanLog{font-family:var(--mono);font-size:11.5px;color:var(--muted);max-height:160px;overflow:auto;background:var(--bg);border-radius:6px;padding:8px 10px;white-space:pre-wrap}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);padding:10px 18px;border-radius:8px;font-size:13.5px;z-index:99;display:none}
+@media(max-width:720px){
+  #q{font-size:16px;padding:13px 4px}
+  header{flex-wrap:wrap}
+  td.file{max-width:120px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="mark">MTC</div>
+    <div><h1>Certificate de calitate<small>rulou zincat · căutare pe pagină</small></h1></div>
+  </div>
+  <div class="hspacer"></div>
+  <span id="idxBadge"></span>
+  <span id="userBadge"></span>
+  <button class="hbtn" id="btnScan" style="display:none">⛏ Scanează certificatele</button>
+  <button class="hbtn" id="btnSettings" style="display:none">⚙</button>
+  <button class="hbtn acc" id="btnLogin" style="display:none">Conectare Microsoft 365</button>
+</header>
+
+<main>
+  <!-- Setări -->
+  <div class="card" id="setupCard" style="display:none">
+    <h2>Configurare (o singură dată pe acest calculator)</h2>
+    <p>Valorile le primești de la administrator — sunt aceleași pentru toți colegii. Se salvează local în acest browser.</p>
+    <div class="frow"><label>Client ID (aplicația Azure)</label><input id="cfgClient" placeholder="ex. 3f2a…-…"></div>
+    <div class="frow"><label>Tenant (domeniul Microsoft)</label><input id="cfgTenant" placeholder="ex. doladelacompany.onmicrosoft.com"></div>
+    <div class="frow"><label>Link folder SharePoint cu certificatele</label><input id="cfgFolder" placeholder="https://…sharepoint.com/sites/…/CERTIFICATE DE CALITATE/RULOU ZINCAT">
+      <div class="hint">Deschide folderul RULOU ZINCAT în SharePoint → butonul „Copy link" → lipește aici.</div></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="hbtn acc" id="cfgSave">Salvează și conectează-te</button>
+      <button class="hbtn" id="cfgCancel" style="display:none">Renunță</button>
+    </div>
+  </div>
+
+  <!-- Panou scanare -->
+  <div id="scanPanel">
+    <h3>Scanare certificate → index de căutare</h3>
+    <p>Citește PDF-urile din folderul de certificate, pagină cu pagină, și construiește indexul (rulou → fișier + pagină). Fișierele deja indexate și nemodificate sunt sărite — rulează doar diferența. Indexul se salvează pe SharePoint și e văzut de toți colegii.</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="hbtn acc" id="scanStart">Pornește scanarea</button>
+      <button class="hbtn" id="scanStop" disabled>Oprește</button>
+      <span id="scanStatus" style="font-size:12.5px;color:var(--muted)"></span>
+    </div>
+    <div class="progress"><i id="scanBar"></i></div>
+    <div id="scanLog"></div>
+  </div>
+
+  <!-- Căutare -->
+  <div id="searchArea" style="display:none">
+    <div class="searchbox">
+      <span class="icon">⌕</span>
+      <input id="q" placeholder="Nr. rulou (și parțial), ex. 250265078…  — sau folosește filtrele de mai jos" autocomplete="off">
+    </div>
+    <div class="filters">
+      <label>Grosime</label><select id="fT"><option value="">toate</option></select>
+      <label>Zinc</label><select id="fZ"><option value="">tot</option></select>
+      <label>Calitate</label><select id="fG"><option value="">toate</option></select>
+      <label>Producător</label><select id="fP"><option value="">toți</option></select>
+      <label>Kg</label><input id="fKgMin" placeholder="min" inputmode="numeric"><span style="color:var(--faint)">–</span><input id="fKgMax" placeholder="max" inputmode="numeric">
+      <button class="fclear" id="fClear">șterge filtrele</button>
+    </div>
+    <div id="stats"></div>
+    <div id="results"></div>
+  </div>
+</main>
+
+<!-- Vizualizator -->
+<div id="viewer">
+  <div class="vhead">
+    <div style="flex:1;min-width:0">
+      <div class="title" id="vTitle"></div>
+      <div class="sub" id="vSub"></div>
+    </div>
+    <button class="hbtn" id="vZoomOut">−</button>
+    <button class="hbtn" id="vZoomIn">+</button>
+    <button class="hbtn" id="vPrint">🖨 Printează pagina</button>
+    <button class="hbtn" id="vDownload">⬇ Descarcă doar pagina (PDF)</button>
+    <a class="hbtn" id="vOpenFull" target="_blank" style="text-decoration:none">Deschide PDF complet</a>
+    <button class="hbtn acc" id="vClose">✕ Închide</button>
+  </div>
+  <div class="vbody"><div class="vload" id="vLoad">Se încarcă pagina…</div><canvas id="pgCanvas" style="display:none"></canvas></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ═══════════ config & stare ═══════════ */
+const LS_CFG = "cert_cfg_v1";
+const INDEX_FILE = "_index-rulouri.json";
+let cfg = JSON.parse(localStorage.getItem(LS_CFG) || "null");
+/* Config implicit — valabil pentru toți colegii; Client ID și tenant nu sunt secrete
+   (securitatea o face login-ul Microsoft + drepturile fiecăruia din SharePoint). */
+const DEFAULT_CFG = {
+  client: "89f5aec6-a69e-4024-ad43-cbc9ccc2fbb5",
+  tenant: "b319080a-7e7a-4086-9913-1dfdd1c52e17",
+  folder: "https://doladelacompany.sharepoint.com/sites/comm/Documente partajate/CERTIFICATE DE CALITATE/RULOU ZINCAT"
+};
+if(!cfg) cfg = DEFAULT_CFG;
+let msalApp = null, account = null;
+let folderRef = null;          // {driveId, itemId, webUrl}
+let INDEX = null;              // {ver, updated, files:{}, rows:[], pageIds:{}}
+let pdfCache = new Map();      // itemId -> Promise<ArrayBuffer>
+let scanAbort = false;
+
+const $ = id => document.getElementById(id);
+const toast = m => { const t=$("toast"); t.textContent=m; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none", 3800); };
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtKg = v => v==null ? "—" : Number(v).toLocaleString("ro-RO");
+const fmtN  = v => v==null ? "—" : String(v).replace(".", ",");
+
+/* ═══════════ autentificare ═══════════ */
+function initMsal(){
+  msalApp = new msal.PublicClientApplication({
+    auth:{ clientId: cfg.client, authority: "https://login.microsoftonline.com/"+cfg.tenant,
+           redirectUri: location.origin + location.pathname },
+    cache:{ cacheLocation:"localStorage" }
+  });
+  const accs = msalApp.getAllAccounts();
+  if(accs.length){ account = accs[0]; return Promise.resolve(); }
+  return Promise.reject();
+}
+async function login(){
+  try{
+    const r = await msalApp.loginPopup({ scopes:["Files.ReadWrite.All"] });
+    account = r.account; await afterLogin();
+  }catch(e){ toast("Conectarea a eșuat: "+(e.errorCode||e.message)); }
+}
+async function getToken(){
+  try{
+    const r = await msalApp.acquireTokenSilent({ scopes:["Files.ReadWrite.All"], account });
+    return r.accessToken;
+  }catch(e){
+    const r = await msalApp.acquireTokenPopup({ scopes:["Files.ReadWrite.All"], account });
+    return r.accessToken;
+  }
+}
+async function graph(path, opts={}){
+  const tok = await getToken();
+  const res = await fetch("https://graph.microsoft.com/v1.0"+path, {
+    ...opts, headers:{ Authorization:"Bearer "+tok, ...(opts.headers||{}) }
+  });
+  if(!res.ok){ const t = await res.text(); throw new Error("Graph "+res.status+": "+t.slice(0,200)); }
+  return res;
+}
+
+/* ═══════════ folder & index pe SharePoint ═══════════ */
+function encodeShare(url){
+  return "u!"+btoa(unescape(encodeURIComponent(url))).replace(/=+$/,"").replace(/\//g,"_").replace(/\+/g,"-");
+}
+async function resolveFolder(){
+  const res = await graph("/shares/"+encodeShare(cfg.folder)+"/driveItem?$select=id,name,webUrl,parentReference");
+  const it = await res.json();
+  folderRef = { driveId: it.parentReference.driveId, itemId: it.id, webUrl: it.webUrl, name: it.name };
+}
+async function loadIndex(){
+  try{
+    const meta = await (await graph(`/drives/${folderRef.driveId}/items/${folderRef.itemId}:/${INDEX_FILE}?$select=id,@microsoft.graph.downloadUrl`)).json();
+    const dl = meta["@microsoft.graph.downloadUrl"];
+    INDEX = await (await fetch(dl)).json();
+  }catch(e){
+    INDEX = { ver:1, updated:null, files:{}, rows:[], pageIds:{} };
+  }
+  refreshUI();
+}
+async function saveIndex(){
+  INDEX.updated = new Date().toISOString();
+  const body = JSON.stringify(INDEX);
+  await graph(`/drives/${folderRef.driveId}/items/${folderRef.itemId}:/${INDEX_FILE}:/content`,
+    { method:"PUT", headers:{ "Content-Type":"application/json" }, body });
+}
+
+/* ═══════════ scanare PDF → index ═══════════ */
+async function listPdfsRecursive(itemId, path, out){
+  let url = `/drives/${folderRef.driveId}/items/${itemId}/children?$select=id,name,file,folder,lastModifiedDateTime,size,webUrl&$top=200`;
+  while(url){
+    const res = await graph(url.startsWith("/")?url:url.replace("https://graph.microsoft.com/v1.0",""));
+    const j = await res.json();
+    for(const c of j.value){
+      if(c.folder) await listPdfsRecursive(c.id, path+"/"+c.name, out);
+      else if(/\.pdf$/i.test(c.name)) out.push({ id:c.id, name:c.name, path, webUrl:c.webUrl, mod:c.lastModifiedDateTime, size:c.size });
+    }
+    url = j["@odata.nextLink"] || null;
+  }
+}
+
+/* — reconstruiește liniile unei pagini din itemele pdf.js — */
+function pageLines(tc){
+  const items = tc.items.filter(i=>i.str && i.str.trim());
+  const rows = [];
+  for(const it of items){
+    const y = Math.round(it.transform[5]);
+    let row = rows.find(r=>Math.abs(r.y-y)<=2.5);
+    if(!row){ row={y, parts:[]}; rows.push(row); }
+    row.parts.push({ x: it.transform[4], s: it.str });
+  }
+  rows.sort((a,b)=>b.y-a.y);
+  return rows.map(r=>r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s).join(" ").replace(/\s+/g," ").trim());
+}
+const numTR = s => { // "13.778,9" -> 13778.9 ; "6.250" -> 6250 ; "2,00" -> 2.0
+  s = s.replace(/\./g,"").replace(",",".");
+  const v = parseFloat(s); return isNaN(v)?null:v;
+};
+function guessProducer(path, text){
+  const p = path.toUpperCase();
+  if(p.includes("TATMETAL")) return "Tatmetal (TR)";
+  if(p.includes("MARCEGAGLIA")) return "Marcegaglia (IT)";
+  if(p.includes("TEZCAN")) return "Tezcan (TR)";
+  if(/TATMETAL/i.test(text)) return "Tatmetal (TR)";
+  if(/MARCEGAGLIA/i.test(text)) return "Marcegaglia (IT)";
+  if(/TEZCAN/i.test(text)) return "Tezcan (TR)";
+  return "necunoscut";
+}
+/* — parsează o pagină: rânduri structurate + toate ID-urile numerice — */
+function parsePage(lines, fullText, producer){
+  const rows = [], ids = new Set();
+  let cert = null;
+  const mCert = fullText.match(/(?:Certificate|Belge)\s*(?:Number|No)?\s*[:\s]\s*([A-Z]?\d{6,12})/i);
+  if(mCert) cert = mCert[1];
+
+  if(producer.startsWith("Marcegaglia")){
+    // EN 10168: B07 = lot/rulou ; C11 Re ; C12 Rm ; C13 A%
+    let re=null, rm=null, a=null, t=null, w=null, coat=null, grade=null;
+    const g = fullText.match(/\b(DX5\d[A-Z]?|S\d{3}GD|HX\d{3}[A-Z]*)\s*(?:\+\s*)?(Z[AF]?|ZM)?\s*/);
+    if(g) grade = g[1]+(g[2]?"+"+g[2]:"");
+    const dims = fullText.match(/(\d{1,2}[.,]\d{2})\s*[xX×*]\s*(\d{3,4})/);
+    if(dims){ t=numTR(dims[1]); w=parseInt(dims[2]); }
+    const cz = fullText.match(/\bZ\s?(\d{2,3})\b/); if(cz) coat="Z"+cz[1];
+    const c11 = fullText.match(/C11[^0-9]*(\d{2,3})/); if(c11) re=parseInt(c11[1]);
+    const c12 = fullText.match(/C12[^0-9]*(\d{2,3})/); if(c12) rm=parseInt(c12[1]);
+    const c13 = fullText.match(/C13[^0-9]*(\d{1,2}(?:[.,]\d)?)/); if(c13) a=numTR(c13[1]);
+    for(const ln of lines){
+      const b07 = ln.match(/B07\D*([A-Z0-9\-\/]{5,20})/);
+      if(b07){
+        const id = b07[1];
+        ids.add(id);
+        let kg=null; const rest2 = ln.replace(id,"");
+        let mk = rest2.match(/(\d{1,2}\.\d{3})(?:[.,]\d+)?\s*(?:kg)?/i);
+        if(!mk) mk = rest2.match(/\b(\d{4,5})\s*kg/i);
+        if(mk) kg=numTR(mk[1]);
+        rows.push({ id, kg, t, w, coat, grade, re, rm, a, cert });
+      }
+    }
+  } else {
+    // Tatmetal & generic: un rând = un rulou cu ID de 12–15 cifre
+    for(const ln of lines){
+      const mid = ln.match(/\b(\d{12,15})\b/);
+      if(!mid) continue;
+      const id = mid[1];
+      ids.add(id);
+      const rest = ln.replace(id,"");
+      let t=null,w=null,coat=null,grade=null,re=null,rm=null,a=null,kg=null;
+      const dims = rest.match(/(\d{1,2}[.,]\d{2})\s*[xX×*]\s*(\d{3,4})/);
+      if(dims){ t=numTR(dims[1]); w=parseInt(dims[2]); }
+      const g = rest.match(/\b(DX5\d[A-Z]?|S\d{3}GD|HX\d{3}[A-Z]*)\b/);
+      if(g) grade=g[1];
+      const cz = rest.match(/\bZ\s?(\d{2,3})\b/);
+      if(cz){
+        coat="Z"+cz[1];
+        // după acoperire urmează Re, Rm, A%
+        const after = rest.slice(rest.indexOf(cz[0])+cz[0].length);
+        const nums = after.match(/(\d{2,3})\s+(\d{2,3})\s+(\d{1,2}(?:[.,]\d)?)/);
+        if(nums){ re=parseInt(nums[1]); rm=parseInt(nums[2]); a=numTR(nums[3]); }
+      }
+      const mk = rest.match(/(\d{1,2}\.\d{3})(?:[.,]\d+)?\s*\//); // "6.250 /13.778,9"
+      if(mk) kg=numTR(mk[1]);
+      else { const mk2 = rest.match(/\b(\d{1,2}\.\d{3})\b/); if(mk2) kg=numTR(mk2[1]); }
+      rows.push({ id, kg, t, w, coat, grade, re, rm, a, cert });
+    }
+    // ID-uri suplimentare (ex. în antete) — le indexăm doar pentru căutare
+    const all = fullText.match(/\b\d{12,15}\b/g) || [];
+    all.forEach(x=>ids.add(x));
+  }
+  return { rows, ids:[...ids], cert };
+}
+
+async function downloadPdfBytes(itemId){
+  if(pdfCache.has(itemId)) return pdfCache.get(itemId);
+  const p = (async()=>{
+    const meta = await (await graph(`/drives/${folderRef.driveId}/items/${itemId}?$select=id,@microsoft.graph.downloadUrl`)).json();
+    const res = await fetch(meta["@microsoft.graph.downloadUrl"]);
+    return await res.arrayBuffer();
+  })();
+  pdfCache.set(itemId, p);
+  p.catch(()=>pdfCache.delete(itemId));
+  return p;
+}
+
+async function runScan(){
+  scanAbort = false;
+  $("scanStart").disabled = true; $("scanStop").disabled = false;
+  const log = m => { const el=$("scanLog"); el.textContent += m+"\n"; el.scrollTop = el.scrollHeight; };
+  $("scanLog").textContent = "";
+  $("scanStatus").textContent = "Listez fișierele…";
+  try{
+    const files = [];
+    await listPdfsRecursive(folderRef.itemId, "", files);
+    const todo = files.filter(f => !INDEX.files[f.id] || INDEX.files[f.id].m !== f.mod);
+    // scoate din index rândurile fișierelor șterse
+    const alive = new Set(files.map(f=>f.id));
+    for(const fid of Object.keys(INDEX.files)) if(!alive.has(fid)){ delete INDEX.files[fid]; delete INDEX.pageIds[fid]; INDEX.rows = INDEX.rows.filter(r=>r[9]!==fid); }
+    log(`Fișiere PDF găsite: ${files.length} · de procesat: ${todo.length} (restul sunt deja în index)`);
+    let done = 0, saved = 0;
+    for(const f of todo){
+      if(scanAbort){ log("⏹ Oprit de utilizator — progresul de până acum e salvat."); break; }
+      $("scanStatus").textContent = `Procesez ${done+1}/${todo.length}: ${f.name}`;
+      try{
+        const bytes = await downloadPdfBytes(f.id);
+        const pdf = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+        // curăță intrările vechi ale acestui fișier
+        INDEX.rows = INDEX.rows.filter(r=>r[9]!==f.id);
+        INDEX.pageIds[f.id] = {};
+        let rowsInFile = 0;
+        let producer = guessProducer(f.path, "");
+        for(let pg=1; pg<=pdf.numPages; pg++){
+          const page = await pdf.getPage(pg);
+          const tc = await page.getTextContent();
+          const lines = pageLines(tc);
+          const fullText = lines.join("\n");
+          if(producer==="necunoscut") producer = guessProducer(f.path, fullText);
+          const { rows, ids } = parsePage(lines, fullText, producer);
+          for(const r of rows){
+            INDEX.rows.push([r.id, r.kg, r.t, r.w, r.coat, r.grade, r.re, r.rm, r.a, f.id, pg, r.cert, producer]);
+            rowsInFile++;
+          }
+          const rowIds = new Set(rows.map(r=>r.id));
+          const extra = ids.filter(x=>!rowIds.has(x));
+          if(extra.length) INDEX.pageIds[f.id][pg] = extra;
+        }
+        INDEX.files[f.id] = { n:f.name, p:f.path, u:f.webUrl, m:f.mod, pg:pdf.numPages };
+        pdf.destroy();
+        log(`✓ ${f.name} — ${pdf.numPages} pagini, ${rowsInFile} rulouri`);
+      }catch(e){ log(`✗ ${f.name} — ${e.message}`); }
+      done++;
+      $("scanBar").style.width = Math.round(done/todo.length*100)+"%";
+      if(done - saved >= 8){ await saveIndex(); saved = done; }
+    }
+    await saveIndex();
+    $("scanStatus").textContent = "Gata. Index salvat pe SharePoint.";
+    log(`— Index: ${INDEX.rows.length} rulouri din ${Object.keys(INDEX.files).length} fișiere.`);
+    refreshUI();
+  }catch(e){ toast("Eroare la scanare: "+e.message); }
+  $("scanStart").disabled = false; $("scanStop").disabled = true;
+}
+
+/* ═══════════ căutare ═══════════ */
+function rowObj(r){ return { id:r[0], kg:r[1], t:r[2], w:r[3], coat:r[4], grade:r[5], re:r[6], rm:r[7], a:r[8], fid:r[9], pg:r[10], cert:r[11], prod:r[12] }; }
+
+function fillFilters(){
+  const uniq = (arr, fmt) => [...new Set(arr.filter(x=>x!=null))].sort((a,b)=>a>b?1:-1);
+  const setOpts = (id, vals, fmt) => { const s=$(id); const cur=s.value; s.innerHTML = s.options[0].outerHTML + vals.map(v=>`<option value="${esc(v)}">${esc(fmt?fmt(v):v)}</option>`).join(""); s.value=cur; };
+  const R = INDEX.rows.map(rowObj);
+  setOpts("fT", uniq(R.map(r=>r.t)), v=>fmtN(v)+" mm");
+  setOpts("fZ", uniq(R.map(r=>r.coat)));
+  setOpts("fG", uniq(R.map(r=>r.grade)));
+  setOpts("fP", uniq(R.map(r=>r.prod)));
+}
+function doSearch(){
+  if(!INDEX) return;
+  const q = $("q").value.trim();
+  const fT=$("fT").value, fZ=$("fZ").value, fG=$("fG").value, fP=$("fP").value;
+  const kmin = parseFloat($("fKgMin").value)||null, kmax = parseFloat($("fKgMax").value)||null;
+  const qDigits = q.replace(/\D/g,"");
+  const isIdQ = qDigits.length >= 4 && qDigits.length === q.replace(/\s/g,"").length;
+
+  let out = [];
+  for(const raw of INDEX.rows){
+    const r = rowObj(raw);
+    if(fT && String(r.t)!==fT) continue;
+    if(fZ && r.coat!==fZ) continue;
+    if(fG && r.grade!==fG) continue;
+    if(fP && r.prod!==fP) continue;
+    if(kmin!=null && (r.kg==null || r.kg<kmin)) continue;
+    if(kmax!=null && (r.kg==null || r.kg>kmax)) continue;
+    if(q){
+      if(isIdQ){ if(!String(r.id).includes(qDigits)) continue; }
+      else {
+        const hay = [r.id,r.grade,r.coat,r.cert,r.prod,INDEX.files[r.fid]?.n].join(" ").toLowerCase();
+        if(!hay.includes(q.toLowerCase())) continue;
+      }
+    }
+    out.push(r);
+    if(out.length>=500) break;
+  }
+  // fallback: ID găsit doar în textul paginii (nu ca rând structurat)
+  let pageHits = [];
+  if(isIdQ && out.length===0){
+    for(const fid of Object.keys(INDEX.pageIds)){
+      for(const pg of Object.keys(INDEX.pageIds[fid])){
+        if(INDEX.pageIds[fid][pg].some(x=>String(x).includes(qDigits)))
+          pageHits.push({ fid, pg:+pg, id: INDEX.pageIds[fid][pg].find(x=>String(x).includes(qDigits)) });
+      }
+    }
+  }
+  render(out, pageHits, q);
+}
+function render(rows, pageHits, q){
+  const st = $("stats");
+  const total = INDEX.rows.length;
+  st.innerHTML = rows.length || pageHits.length
+    ? `<b>${rows.length}</b> rulouri găsite${pageHits.length?` + <b>${pageHits.length}</b> potriviri în text`:""} · index: ${total} rulouri, ${Object.keys(INDEX.files).length} certificate${INDEX.updated?` · actualizat ${new Date(INDEX.updated).toLocaleDateString("ro-RO")}`:""}`
+    : `Niciun rezultat · index: ${total} rulouri, ${Object.keys(INDEX.files).length} certificate`;
+  const res = $("results");
+  if(!rows.length && !pageHits.length){
+    res.innerHTML = `<div class="empty"><div class="big">⌕</div>${total? "Niciun rulou nu se potrivește. Verifică numărul sau lărgește filtrele." : "Indexul e gol — apasă „⛏ Scanează certificatele” (o face administratorul, o singură dată)."}</div>`;
+    return;
+  }
+  let h = `<table><thead><tr><th>Nr. rulou</th><th>Dim.</th><th>Zinc</th><th style="text-align:right">Kg</th><th>Calitate</th><th style="text-align:right">Re</th><th style="text-align:right">Rm</th><th style="text-align:right">A%</th><th>Certificat / fișier</th><th></th></tr></thead><tbody>`;
+  for(const r of rows.slice(0,300)){
+    const f = INDEX.files[r.fid]||{};
+    h += `<tr onclick="openViewer('${r.fid}',${r.pg},'${esc(r.id)}')">
+      <td class="id">${esc(r.id)}</td>
+      <td class="num">${r.t!=null?fmtN(r.t)+"×"+(r.w||"?"):"—"}</td>
+      <td>${r.coat?`<span class="badge">${esc(r.coat)}</span>`:"—"}</td>
+      <td class="num">${fmtKg(r.kg)}</td>
+      <td>${esc(r.grade||"—")}</td>
+      <td class="num">${r.re??"—"}</td><td class="num">${r.rm??"—"}</td><td class="num">${fmtN(r.a)}</td>
+      <td class="file" title="${esc((f.p||"")+"/"+(f.n||""))}">${esc(r.cert?r.cert+" · ":"")}${esc(f.n||"?")}</td>
+      <td><button class="pagebtn">pag. ${r.pg} →</button></td></tr>`;
+  }
+  for(const ph of pageHits.slice(0,50)){
+    const f = INDEX.files[ph.fid]||{};
+    h += `<tr onclick="openViewer('${ph.fid}',${ph.pg},'${esc(ph.id)}')">
+      <td class="id src-page">${esc(ph.id)}</td><td colspan="7" style="color:var(--muted)">găsit în textul paginii (fără rând structurat)</td>
+      <td class="file">${esc(f.n||"?")}</td><td><button class="pagebtn">pag. ${ph.pg} →</button></td></tr>`;
+  }
+  h += "</tbody></table>";
+  res.innerHTML = h;
+}
+
+/* ═══════════ vizualizator pagină ═══════════ */
+let vState = null; // {fid, pg, scale, pdf}
+async function openViewer(fid, pg, coilId){
+  const f = INDEX.files[fid]||{};
+  $("vTitle").innerHTML = `Rulou <b>${esc(coilId)}</b> — pagina <b>${pg}</b> din ${f.pg||"?"}`;
+  $("vSub").textContent = (f.p?f.p.replace(/^\//,"")+" / ":"")+(f.n||"");
+  $("vOpenFull").href = f.u||"#";
+  $("viewer").classList.add("open");
+  $("pgCanvas").style.display="none"; $("vLoad").style.display="block"; $("vLoad").textContent="Se încarcă pagina…";
+  try{
+    const bytes = await downloadPdfBytes(fid);
+    const pdf = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    vState = { fid, pg, coilId, scale: 1.35, pdf, name: f.n };
+    await renderPage();
+  }catch(e){ $("vLoad").textContent = "Nu am putut încărca PDF-ul: "+e.message; }
+}
+async function renderPage(){
+  const page = await vState.pdf.getPage(vState.pg);
+  const vp = page.getViewport({ scale: vState.scale * (window.devicePixelRatio||1) });
+  const c = $("pgCanvas");
+  c.width = vp.width; c.height = vp.height;
+  c.style.width = (vp.width/(window.devicePixelRatio||1))+"px";
+  await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+  $("vLoad").style.display="none"; c.style.display="block";
+}
+$("vZoomIn").onclick = ()=>{ if(vState){ vState.scale*=1.25; renderPage(); } };
+$("vZoomOut").onclick = ()=>{ if(vState){ vState.scale/=1.25; renderPage(); } };
+$("vClose").onclick = ()=>{ $("viewer").classList.remove("open"); if(vState){ vState.pdf.destroy(); vState=null; } };
+$("vPrint").onclick = ()=>{
+  if(!vState) return;
+  const data = $("pgCanvas").toDataURL("image/png");
+  const w = window.open("","_blank");
+  w.document.write(`<img src="${data}" style="width:100%" onload="window.print()">`);
+  w.document.close();
+};
+$("vDownload").onclick = async ()=>{
+  if(!vState) return;
+  try{
+    const bytes = await downloadPdfBytes(vState.fid);
+    const src = await PDFLib.PDFDocument.load(bytes);
+    const out = await PDFLib.PDFDocument.create();
+    const [p] = await out.copyPages(src, [vState.pg-1]);
+    out.addPage(p);
+    const blob = new Blob([await out.save()], { type:"application/pdf" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `rulou-${vState.coilId}-pag${vState.pg}.pdf`;
+    a.click(); URL.revokeObjectURL(a.href);
+  }catch(e){ toast("Descărcarea paginii a eșuat: "+e.message); }
+};
+window.openViewer = openViewer;
+
+/* ═══════════ UI general ═══════════ */
+function refreshUI(){
+  $("searchArea").style.display = "block";
+  $("idxBadge").innerHTML = INDEX && INDEX.rows.length
+    ? `<b>${INDEX.rows.length}</b> rulouri indexate`
+    : "index gol";
+  fillFilters();
+  doSearch();
+}
+async function afterLogin(){
+  $("btnLogin").style.display = "none";
+  $("btnScan").style.display = "inline-block";
+  $("btnSettings").style.display = "inline-block";
+  $("userBadge").textContent = account.username;
+  $("setupCard").style.display = "none";
+  try{
+    await resolveFolder();
+    await loadIndex();
+  }catch(e){
+    toast("Nu pot deschide folderul de certificate: "+e.message);
+    showSetup(true);
+  }
+}
+function showSetup(cancelable){
+  $("setupCard").style.display = "block";
+  $("cfgCancel").style.display = cancelable ? "inline-block" : "none";
+  if(cfg){ $("cfgClient").value=cfg.client; $("cfgTenant").value=cfg.tenant; $("cfgFolder").value=cfg.folder; }
+}
+$("cfgSave").onclick = async ()=>{
+  const c = { client:$("cfgClient").value.trim(), tenant:$("cfgTenant").value.trim(), folder:$("cfgFolder").value.trim() };
+  if(!c.client || !c.tenant || !c.folder){ toast("Completează toate cele 3 câmpuri."); return; }
+  cfg = c; localStorage.setItem(LS_CFG, JSON.stringify(c));
+  $("setupCard").style.display="none";
+  try{ await initMsal().then(afterLogin); }catch(_){ initMsalOnly(); $("btnLogin").style.display="inline-block"; login(); }
+};
+function initMsalOnly(){
+  if(!msalApp) msalApp = new msal.PublicClientApplication({
+    auth:{ clientId: cfg.client, authority:"https://login.microsoftonline.com/"+cfg.tenant, redirectUri: location.origin+location.pathname },
+    cache:{ cacheLocation:"localStorage" }
+  });
+}
+$("cfgCancel").onclick = ()=> $("setupCard").style.display="none";
+$("btnSettings").onclick = ()=> showSetup(true);
+$("btnLogin").onclick = ()=>{ initMsalOnly(); login(); };
+$("btnScan").onclick = ()=> $("scanPanel").classList.toggle("open");
+$("scanStart").onclick = runScan;
+$("scanStop").onclick = ()=>{ scanAbort = true; };
+["q","fT","fZ","fG","fP","fKgMin","fKgMax"].forEach(id=>{
+  $(id).addEventListener("input", ()=>{ clearTimeout(window._dq); window._dq = setTimeout(doSearch, 180); });
+});
+$("fClear").onclick = ()=>{ ["fT","fZ","fG","fP"].forEach(i=>$(i).value=""); ["fKgMin","fKgMax","q"].forEach(i=>$(i).value=""); doSearch(); };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("vClose").click(); });
+
+/* pornire */
+(async ()=>{
+  if(typeof msal === "undefined"){
+    document.querySelector("main").innerHTML = '<div class="card"><h2>Nu s-a putut încărca biblioteca de autentificare</h2><p>Verifică conexiunea la internet și reîncarcă pagina (Ctrl+F5). Dacă persistă, rețeaua firmei blochează cdn.jsdelivr.net — spune-i administratorului.</p></div>';
+    return;
+  }
+  if(!cfg){ showSetup(false); return; }
+  try{ await initMsal(); await afterLogin(); }
+  catch(_){ initMsalOnly(); $("btnLogin").style.display="inline-block"; }
+})();
+</script>
+</body>
+</html>
