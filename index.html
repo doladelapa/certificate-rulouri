@@ -169,9 +169,10 @@ tr:hover .pagebtn{border-color:var(--accent);background:#fff}
       <label>Categorie</label><select id="fCat"><option value="">toate</option><option value="Zincat">Zincat</option><option value="Prevopsit">Prevopsit</option></select>
       <label>Grosime</label><select id="fT"><option value="">toate</option></select>
       <label>Acoperire</label><select id="fZ"><option value="">toate</option></select>
+      <label>Culoare</label><select id="fCuloare"><option value="">toate</option></select>
       <label>Calitate</label><select id="fG"><option value="">toate</option></select>
       <label>Producător</label><select id="fP"><option value="">toți</option></select>
-      <label>Kg</label><input id="fKgMin" placeholder="min" inputmode="numeric"><span style="color:var(--faint)">–</span><input id="fKgMax" placeholder="max" inputmode="numeric">
+      <label>Kg</label><select id="fKgB"><option value="">toate</option><option value="0-3000">sub 3.000</option><option value="3000-5000">3.000–5.000</option><option value="5000-6000">5.000–6.000</option><option value="6000-8000">6.000–8.000</option><option value="8000-999999">peste 8.000</option></select>
       <button class="fclear" id="fClear">șterge filtrele</button>
     </div>
     <div id="stats"></div>
@@ -479,7 +480,7 @@ async function runScan(){
           const extra = ids.filter(x=>!rowIds.has(x));
           if(extra.length) INDEX.pageIds[f.id][pg] = extra;
         }
-        INDEX.files[f.id] = { n:f.name, p:f.path, u:f.webUrl, m:f.mod, pg:pdf.numPages };
+        INDEX.files[f.id] = { n:f.name, p:f.path, u:f.webUrl, m:f.mod, pg:pdf.numPages, prod:producer, cat:categorie };
         pdf.destroy();
         log(`✓ ${f.name} — ${pdf.numPages} pagini, ${rowsInFile} rulouri`);
       }catch(e){ log(`✗ ${f.name} — ${e.message}`); }
@@ -504,14 +505,17 @@ function fillFilters(){
   const R = INDEX.rows.map(rowObj);
   setOpts("fT", uniq(R.map(r=>r.t)), v=>fmtN(v)+" mm");
   setOpts("fZ", uniq(R.map(r=>r.coat)));
+  setOpts("fCuloare", uniq(R.map(r=>r.culoare)));
   setOpts("fG", uniq(R.map(r=>r.grade)));
-  setOpts("fP", uniq(R.map(r=>r.prod)));
+  setOpts("fP", uniq([...R.map(r=>r.prod), ...Object.values(INDEX.files).map(f=>f.prod)]));
 }
 function doSearch(){
   if(!INDEX) return;
   const q = $("q").value.trim();
-  const fT=$("fT").value, fZ=$("fZ").value, fG=$("fG").value, fP=$("fP").value, fCat=$("fCat").value;
-  const kmin = parseFloat($("fKgMin").value)||null, kmax = parseFloat($("fKgMax").value)||null;
+  const fT=$("fT").value, fZ=$("fZ").value, fG=$("fG").value, fP=$("fP").value, fCat=$("fCat").value, fCul=$("fCuloare").value;
+  const kb = $("fKgB").value;
+  let kmin=null, kmax=null;
+  if(kb){ const parts = kb.split("-"); kmin=parseFloat(parts[0]); kmax=parseFloat(parts[1]); }
   const qDigits = q.replace(/\D/g,"");
   const isIdQ = qDigits.length >= 4 && qDigits.length === q.replace(/\s/g,"").length;
 
@@ -520,6 +524,7 @@ function doSearch(){
     const r = rowObj(raw);
     if(fT && String(r.t)!==fT) continue;
     if(fZ && r.coat!==fZ) continue;
+    if(fCul && r.culoare!==fCul) continue;
     if(fG && r.grade!==fG) continue;
     if(fP && r.prod!==fP) continue;
     if(fCat && r.categorie!==fCat) continue;
@@ -535,7 +540,7 @@ function doSearch(){
     out.push(r);
     if(out.length>=500) break;
   }
-  // fallback: ID găsit doar în textul paginii (nu ca rând structurat)
+  // fallback 1: ID găsit doar în textul paginii (nu ca rând structurat)
   let pageHits = [];
   if(isIdQ && out.length===0){
     for(const fid of Object.keys(INDEX.pageIds)){
@@ -545,43 +550,77 @@ function doSearch(){
       }
     }
   }
-  render(out, pageHits, q);
+  // fallback 2: certificate scanate ca imagine, fără text extras deloc (ex. PRABHAT, STEELOX) —
+  // rămân găsibile după producător/nume fișier/categorie, dar fără date de rulou individual.
+  let fileHits = [];
+  if(!isIdQ){
+    const withRows = new Set(INDEX.rows.map(r=>r[9]));
+    for(const [fid, f] of Object.entries(INDEX.files)){
+      if(withRows.has(fid)) continue;
+      if(fT || fZ || fCul || fG || kb) continue; // filtre pe date de rulou nu se pot aplica unui fișier fără rânduri
+      if(fP && f.prod!==fP) continue;
+      if(fCat && f.cat!==fCat) continue;
+      if(q){
+        const hay = [f.n, f.p, f.prod, f.cat].join(" ").toLowerCase();
+        if(!hay.includes(q.toLowerCase())) continue;
+      } else if(!fP && !fCat){
+        continue; // fără căutare/filtru explicit, nu aglomerăm rezultatul cu toate fișierele nescanabile
+      }
+      fileHits.push({ fid, ...f });
+      if(fileHits.length>=100) break;
+    }
+  }
+  render(out, pageHits, fileHits, q);
 }
-function render(rows, pageHits, q){
+function render(rows, pageHits, fileHits, q){
   const st = $("stats");
   const total = INDEX.rows.length;
-  st.innerHTML = rows.length || pageHits.length
-    ? `<b>${rows.length}</b> rulouri găsite${pageHits.length?` + <b>${pageHits.length}</b> potriviri în text`:""} · index: ${total} rulouri, ${Object.keys(INDEX.files).length} certificate${INDEX.updated?` · actualizat ${new Date(INDEX.updated).toLocaleDateString("ro-RO")}`:""}`
+  const nimic = !rows.length && !pageHits.length && !fileHits.length;
+  st.innerHTML = !nimic
+    ? `<b>${rows.length}</b> rulouri găsite${pageHits.length?` + <b>${pageHits.length}</b> potriviri în text`:""}${fileHits.length?` + <b>${fileHits.length}</b> certificate scanate (fără date extrase)`:""} · index: ${total} rulouri, ${Object.keys(INDEX.files).length} certificate${INDEX.updated?` · actualizat ${new Date(INDEX.updated).toLocaleDateString("ro-RO")}`:""}`
     : `Niciun rezultat · index: ${total} rulouri, ${Object.keys(INDEX.files).length} certificate`;
   const res = $("results");
-  if(!rows.length && !pageHits.length){
+  if(nimic){
     res.innerHTML = `<div class="empty"><div class="big">⌕</div>${total? "Niciun rulou nu se potrivește. Verifică numărul sau lărgește filtrele." : "Indexul e gol — apasă „⛏ Scanează certificatele” (o face administratorul, o singură dată)."}</div>`;
     return;
   }
-  let h = `<table><thead><tr><th>Nr. rulou</th><th>Tip</th><th>Dim.</th><th>Acoperire</th><th style="text-align:right">Kg</th><th>Calitate</th><th style="text-align:right">Re</th><th style="text-align:right">Rm</th><th style="text-align:right">A%</th><th>Certificat / fișier</th><th></th></tr></thead><tbody>`;
-  for(const r of rows.slice(0,300)){
-    const f = INDEX.files[r.fid]||{};
-    const tip = r.categorie==="Prevopsit" ? `<span class="badge tip-prevopsit">Prevopsit</span>`
-              : r.categorie==="Zincat" ? `<span class="badge tip-zincat">Zincat</span>` : "—";
-    const acoperire = r.coat && r.culoare ? `${r.coat} · ${r.culoare}` : (r.coat || r.culoare || null);
-    h += `<tr onclick="openViewer('${r.fid}',${r.pg},'${esc(r.id)}')">
-      <td class="id">${esc(r.id)}</td>
-      <td>${tip}</td>
-      <td class="num">${r.t!=null?fmtN(r.t)+"×"+(r.w||"?"):"—"}</td>
-      <td>${acoperire?`<span class="badge">${esc(acoperire)}</span>`:"—"}</td>
-      <td class="num">${fmtKg(r.kg)}</td>
-      <td>${esc(r.grade||"—")}</td>
-      <td class="num">${r.re??"—"}</td><td class="num">${r.rm??"—"}</td><td class="num">${fmtN(r.a)}</td>
-      <td class="file" title="${esc((f.p||"")+"/"+(f.n||""))}">${esc(r.cert?r.cert+" · ":"")}${esc(f.n||"?")}</td>
-      <td><button class="pagebtn">pag. ${r.pg} →</button></td></tr>`;
+  let h = "";
+  if(rows.length || pageHits.length){
+    h += `<table><thead><tr><th>Nr. rulou</th><th>Tip</th><th>Dim.</th><th>Acoperire</th><th style="text-align:right">Kg</th><th>Calitate</th><th style="text-align:right">Re</th><th style="text-align:right">Rm</th><th style="text-align:right">A%</th><th>Certificat / fișier</th><th></th></tr></thead><tbody>`;
+    for(const r of rows.slice(0,300)){
+      const f = INDEX.files[r.fid]||{};
+      const tip = r.categorie==="Prevopsit" ? `<span class="badge tip-prevopsit">Prevopsit</span>`
+                : r.categorie==="Zincat" ? `<span class="badge tip-zincat">Zincat</span>` : "—";
+      const acoperire = r.coat && r.culoare ? `${r.coat} · ${r.culoare}` : (r.coat || r.culoare || null);
+      h += `<tr onclick="openViewer('${r.fid}',${r.pg},'${esc(r.id)}')">
+        <td class="id">${esc(r.id)}</td>
+        <td>${tip}</td>
+        <td class="num">${r.t!=null?fmtN(r.t)+"×"+(r.w||"?"):"—"}</td>
+        <td>${acoperire?`<span class="badge">${esc(acoperire)}</span>`:"—"}</td>
+        <td class="num">${fmtKg(r.kg)}</td>
+        <td>${esc(r.grade||"—")}</td>
+        <td class="num">${r.re??"—"}</td><td class="num">${r.rm??"—"}</td><td class="num">${fmtN(r.a)}</td>
+        <td class="file" title="${esc((f.p||"")+"/"+(f.n||""))}">${esc(r.cert?r.cert+" · ":"")}${esc(f.n||"?")}</td>
+        <td><button class="pagebtn">pag. ${r.pg} →</button></td></tr>`;
+    }
+    for(const ph of pageHits.slice(0,50)){
+      const f = INDEX.files[ph.fid]||{};
+      h += `<tr onclick="openViewer('${ph.fid}',${ph.pg},'${esc(ph.id)}')">
+        <td class="id src-page">${esc(ph.id)}</td><td colspan="8" style="color:var(--steel)">găsit în textul paginii (fără rând structurat)</td>
+        <td class="file">${esc(f.n||"?")}</td><td><button class="pagebtn">pag. ${ph.pg} →</button></td></tr>`;
+    }
+    h += "</tbody></table>";
   }
-  for(const ph of pageHits.slice(0,50)){
-    const f = INDEX.files[ph.fid]||{};
-    h += `<tr onclick="openViewer('${ph.fid}',${ph.pg},'${esc(ph.id)}')">
-      <td class="id src-page">${esc(ph.id)}</td><td colspan="8" style="color:var(--steel)">găsit în textul paginii (fără rând structurat)</td>
-      <td class="file">${esc(f.n||"?")}</td><td><button class="pagebtn">pag. ${ph.pg} →</button></td></tr>`;
+  if(fileHits.length){
+    h += `<div style="margin-top:18px"><div style="font-size:12.5px;color:var(--steel);margin-bottom:6px">Certificate scanate ca imagine — fără date de rulou extrase automat (scanare fără text, ex. PRABHAT/STEELOX). Deschide fișierul complet:</div>`;
+    h += `<table><thead><tr><th>Tip</th><th>Producător</th><th>Fișier</th><th></th></tr></thead><tbody>`;
+    for(const f of fileHits){
+      const tip = f.cat==="Prevopsit" ? `<span class="badge tip-prevopsit">Prevopsit</span>` : f.cat==="Zincat" ? `<span class="badge tip-zincat">Zincat</span>` : "—";
+      h += `<tr><td>${tip}</td><td>${esc(f.prod||"—")}</td><td class="file" title="${esc((f.p||"")+"/"+(f.n||""))}">${esc(f.n||"?")}</td>
+        <td><a class="pagebtn" style="text-decoration:none" href="${esc(f.u||"#")}" target="_blank" rel="noopener">deschide PDF ↗</a></td></tr>`;
+    }
+    h += "</tbody></table></div>";
   }
-  h += "</tbody></table>";
   res.innerHTML = h;
 }
 
@@ -689,10 +728,10 @@ $("btnLogin").onclick = ()=>{ initMsalOnly(); login(); };
 $("btnScan").onclick = ()=> $("scanPanel").classList.toggle("open");
 $("scanStart").onclick = runScan;
 $("scanStop").onclick = ()=>{ scanAbort = true; };
-["q","fT","fZ","fG","fP","fCat","fKgMin","fKgMax"].forEach(id=>{
+["q","fT","fZ","fCuloare","fG","fP","fCat","fKgB"].forEach(id=>{
   $(id).addEventListener("input", ()=>{ clearTimeout(window._dq); window._dq = setTimeout(doSearch, 180); });
 });
-$("fClear").onclick = ()=>{ ["fT","fZ","fG","fP","fCat"].forEach(i=>$(i).value=""); ["fKgMin","fKgMax","q"].forEach(i=>$(i).value=""); doSearch(); };
+$("fClear").onclick = ()=>{ ["fT","fZ","fCuloare","fG","fP","fCat","fKgB"].forEach(i=>$(i).value=""); $("q").value=""; doSearch(); };
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("vClose").click(); });
 
 /* pornire */
