@@ -9,101 +9,106 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#14171c; --panel:#1b2027; --panel2:#20262f; --line:#2b323c;
-  --text:#d7dde4; --muted:#8d97a3; --faint:#5b6570;
-  --accent:#ff7a1a; --accent-dim:#b35410; --ok:#3fb970; --warn:#e8b93a; --err:#e05d5d;
-  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  --navy:#1F3864; --navy-deep:#14263F; --steel:#8A94A6; --line:#D9DEE7;
+  --paper:#F5F6F9; --card:#FFFFFF; --ink:#1B2432;
+  --pos:#1E7F4F; --neg:#C0392B; --hl:#FFF3CD; --accent:#2E6FD8;
+  --bg:var(--paper); --panel:#fff; --panel2:#EEF2F9; --text:var(--ink); --muted:var(--steel); --faint:#B4BCCA;
+  --ok:var(--pos); --warn:#B9821A; --err:var(--neg);
+  --mono:'IBM Plex Mono',monospace; --sans:'Barlow',system-ui,sans-serif; --cond:'Barlow Semi Condensed',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.45}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45}
 button{font-family:var(--sans);cursor:pointer}
 input,select{font-family:var(--sans)}
 .mono{font-family:var(--mono)}
 
 /* ── antet ─────────────────────────────── */
-header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:2px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+header{display:flex;align-items:center;gap:14px;padding:12px 20px;background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#2A4A80 100%);color:#fff;position:sticky;top:0;z-index:20}
 .logo{display:flex;align-items:center;gap:10px}
-.logo .mark{width:34px;height:34px;border:2px solid var(--accent);border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:600;color:var(--accent);font-size:13px}
-.logo h1{font-size:15px;font-weight:600;letter-spacing:.4px}
-.logo small{display:block;color:var(--muted);font-weight:400;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase}
+.logo .mark{width:36px;height:36px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;font-family:var(--cond);font-weight:700;color:#fff;font-size:13px}
+.logo h1{font-family:var(--cond);font-size:17px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.logo small{display:block;color:#B9C4D8;font-weight:400;font-size:11.5px;letter-spacing:.4px}
 .hspacer{flex:1}
-.hbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 12px;border-radius:6px;font-size:13px}
-.hbtn:hover{border-color:var(--accent)}
-.hbtn.acc{background:var(--accent);border-color:var(--accent);color:#14171c;font-weight:600}
-.hbtn.acc:hover{background:#ff8d3d}
+.hbtn{background:rgba(255,255,255,.12);border:1px solid #43578A;color:#fff;padding:7px 12px;border-radius:6px;font-size:13px;font-weight:600;transition:background .15s}
+.hbtn:hover{background:rgba(255,255,255,.25)}
+.hbtn.acc{background:#fff;border-color:#fff;color:var(--navy);font-weight:700}
+.hbtn.acc:hover{background:#E7ECF6}
 .hbtn:disabled{opacity:.45;cursor:default}
-#userBadge{font-size:12.5px;color:var(--muted)}
-#idxBadge{font-size:12px;color:var(--muted);font-family:var(--mono)}
-#idxBadge b{color:var(--text)}
+#userBadge{font-size:12.5px;color:#C9D3E4}
+#idxBadge{font-size:12px;color:#C9D3E4;font-family:var(--mono)}
+#idxBadge b{color:#fff}
 
-main{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+main{max-width:1260px;margin:0 auto;padding:22px 18px 60px}
 
 /* ── ecran conectare / setări ─────────── */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;max-width:640px;margin:40px auto}
-.card h2{font-size:17px;margin-bottom:6px}
-.card p{color:var(--muted);font-size:13.5px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px;max-width:640px;margin:40px auto;box-shadow:0 1px 3px rgba(20,38,63,.06)}
+.card h2{font-family:var(--cond);font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.card p{color:var(--steel);font-size:13.5px;margin-bottom:14px}
 .frow{margin-bottom:12px}
-.frow label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.frow input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px;font-family:var(--mono)}
+.frow label{display:block;font-size:12px;color:var(--steel);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;font-weight:600}
+.frow input{width:100%;background:#fff;border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:9px 11px;font-size:14px;font-family:var(--mono)}
 .frow input:focus{outline:none;border-color:var(--accent)}
-.hint{font-size:12px;color:var(--faint);margin-top:4px}
+.hint{font-size:12px;color:var(--steel);margin-top:4px}
 
 /* ── căutare ───────────────────────────── */
-.searchbox{display:flex;gap:0;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);transition:border-color .15s}
+.searchbox{display:flex;gap:0;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card);transition:border-color .15s;box-shadow:0 1px 3px rgba(20,38,63,.05)}
 .searchbox:focus-within{border-color:var(--accent)}
-.searchbox .icon{display:grid;place-items:center;padding:0 14px;color:var(--faint);font-size:19px}
-#q{flex:1;background:transparent;border:none;color:var(--text);font-size:20px;padding:16px 4px;font-family:var(--mono);letter-spacing:.5px}
+.searchbox .icon{display:grid;place-items:center;padding:0 14px;color:var(--steel);font-size:19px}
+#q{flex:1;background:transparent;border:none;color:var(--ink);font-size:20px;padding:16px 4px;font-family:var(--mono);letter-spacing:.5px}
 #q:focus{outline:none}
 #q::placeholder{color:var(--faint);font-size:16px;letter-spacing:0;font-family:var(--sans)}
 .filters{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px;align-items:center}
-.filters select,.filters input{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:7px 9px;font-size:13px}
+.filters select,.filters input{background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:7px 9px;font-size:13px;font-weight:500}
 .filters input{width:96px;font-family:var(--mono)}
-.filters label{font-size:12px;color:var(--muted)}
-.fclear{background:none;border:none;color:var(--accent);font-size:12.5px;text-decoration:underline}
-#stats{margin:16px 2px 8px;font-size:13px;color:var(--muted)}
-#stats b{color:var(--text);font-family:var(--mono)}
+.filters label{font-size:12px;color:var(--steel);text-transform:uppercase;letter-spacing:.3px}
+.fclear{background:none;border:none;color:var(--accent);font-size:12.5px;text-decoration:underline;font-weight:600}
+#stats{margin:16px 2px 8px;font-size:13px;color:var(--steel)}
+#stats b{color:var(--navy);font-family:var(--mono)}
 
 /* ── tabel rezultate ───────────────────── */
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
-tbody td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border-radius:8px;overflow:hidden}
+thead th{text-align:left;font-size:12px;font-weight:600;color:#fff;background:var(--navy);padding:8px 10px;border:1px solid #33507F;white-space:nowrap}
+tbody td{padding:8px 10px;border:1px solid var(--line);white-space:nowrap}
 tbody tr{cursor:pointer}
-tbody tr:hover{background:var(--panel2)}
-td.id{font-family:var(--mono);font-weight:600;color:#fff}
+tbody tr:nth-child(even){background:#F7F9FC}
+tbody tr:hover{background:#EDF2FA}
+td.id{font-family:var(--mono);font-weight:700;color:var(--navy)}
 td.num{font-family:var(--mono);text-align:right}
-td.file{color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+td.file{color:var(--steel);max-width:260px;overflow:hidden;text-overflow:ellipsis}
 .pagebtn{background:var(--panel2);border:1px solid var(--line);color:var(--accent);font-family:var(--mono);font-weight:600;padding:4px 10px;border-radius:6px;font-size:12.5px}
-tr:hover .pagebtn{border-color:var(--accent)}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11.5px;font-family:var(--mono);background:var(--panel2);border:1px solid var(--line)}
+tr:hover .pagebtn{border-color:var(--accent);background:#fff}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11.5px;font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+.tip-zincat{background:#E7ECF6;border-color:#B9C4D8;color:var(--navy);font-family:var(--sans);font-weight:600}
+.tip-prevopsit{background:var(--hl);border-color:#E8C878;color:#7A5B12;font-family:var(--sans);font-weight:600}
 .src-page{color:var(--warn)}
-.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.empty{padding:60px 20px;text-align:center;color:var(--steel)}
 .empty .big{font-size:38px;margin-bottom:10px;opacity:.4}
 
 /* ── vizualizator pagină ───────────────── */
-#viewer{position:fixed;inset:0;background:rgba(10,12,15,.92);z-index:50;display:none;flex-direction:column}
+#viewer{position:fixed;inset:0;background:rgba(20,38,63,.85);z-index:50;display:none;flex-direction:column}
 #viewer.open{display:flex}
-.vhead{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
-.vhead .title{font-family:var(--mono);font-size:13.5px}
-.vhead .title b{color:var(--accent)}
-.vhead .sub{font-size:12px;color:var(--muted);width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vhead{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--navy-deep);color:#fff;border-bottom:1px solid #33507F;flex-wrap:wrap}
+.vhead .title{font-family:var(--mono);font-size:13.5px;color:#fff}
+.vhead .title b{color:#8FB2FF}
+.vhead .sub{font-size:12px;color:#B9C4D8;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vbody{flex:1;overflow:auto;display:grid;place-items:center;padding:18px}
 #pgCanvas{background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.6);max-width:none}
-.vload{color:var(--muted);font-size:14px}
+.vload{color:#C9D3E4;font-size:14px}
 
 /* ── scanare ───────────────────────────── */
-#scanPanel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:22px;display:none}
+#scanPanel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:22px;display:none;box-shadow:0 1px 3px rgba(20,38,63,.06)}
 #scanPanel.open{display:block}
-#scanPanel h3{font-size:14.5px;margin-bottom:4px}
-#scanPanel p{font-size:12.5px;color:var(--muted);margin-bottom:10px}
-.progress{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin:10px 0}
+#scanPanel h3{font-family:var(--cond);font-size:15.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+#scanPanel p{font-size:12.5px;color:var(--steel);margin-bottom:10px}
+.progress{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:10px 0}
 .progress i{display:block;height:100%;background:var(--accent);width:0%;transition:width .3s}
-#scanLog{font-family:var(--mono);font-size:11.5px;color:var(--muted);max-height:160px;overflow:auto;background:var(--bg);border-radius:6px;padding:8px 10px;white-space:pre-wrap}
+#scanLog{font-family:var(--mono);font-size:11.5px;color:var(--ink);max-height:160px;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:pre-wrap}
 
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);padding:10px 18px;border-radius:8px;font-size:13.5px;z-index:99;display:none}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border:1px solid var(--navy-deep);padding:10px 18px;border-radius:8px;font-size:13.5px;z-index:99;display:none;box-shadow:0 4px 16px rgba(20,38,63,.25)}
 @media(max-width:720px){
   #q{font-size:16px;padding:13px 4px}
   header{flex-wrap:wrap}
@@ -116,7 +121,7 @@ tr:hover .pagebtn{border-color:var(--accent)}
 <header>
   <div class="logo">
     <div class="mark">MTC</div>
-    <div><h1>Certificate de calitate<small>rulou zincat · căutare pe pagină</small></h1></div>
+    <div><h1>Certificate de calitate<small>rulou zincat + prevopsit · căutare pe pagină</small></h1></div>
   </div>
   <div class="hspacer"></div>
   <span id="idxBadge"></span>
@@ -133,8 +138,8 @@ tr:hover .pagebtn{border-color:var(--accent)}
     <p>Valorile le primești de la administrator — sunt aceleași pentru toți colegii. Se salvează local în acest browser.</p>
     <div class="frow"><label>Client ID (aplicația Azure)</label><input id="cfgClient" placeholder="ex. 3f2a…-…"></div>
     <div class="frow"><label>Tenant (domeniul Microsoft)</label><input id="cfgTenant" placeholder="ex. doladelacompany.onmicrosoft.com"></div>
-    <div class="frow"><label>Link folder SharePoint cu certificatele</label><input id="cfgFolder" placeholder="https://…sharepoint.com/sites/…/CERTIFICATE DE CALITATE/RULOU ZINCAT">
-      <div class="hint">Deschide folderul RULOU ZINCAT în SharePoint → butonul „Copy link" → lipește aici.</div></div>
+    <div class="frow"><label>Link folder SharePoint cu certificatele</label><input id="cfgFolder" placeholder="https://…sharepoint.com/sites/…/CERTIFICATE DE CALITATE">
+      <div class="hint">Deschide folderul CERTIFICATE DE CALITATE în SharePoint (cel care conține RULOU ZINCAT și RULOU PREVOPSIT) → butonul „Copy link" → lipește aici.</div></div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="hbtn acc" id="cfgSave">Salvează și conectează-te</button>
       <button class="hbtn" id="cfgCancel" style="display:none">Renunță</button>
@@ -161,8 +166,9 @@ tr:hover .pagebtn{border-color:var(--accent)}
       <input id="q" placeholder="Nr. rulou (și parțial), ex. 250265078…  — sau folosește filtrele de mai jos" autocomplete="off">
     </div>
     <div class="filters">
+      <label>Categorie</label><select id="fCat"><option value="">toate</option><option value="Zincat">Zincat</option><option value="Prevopsit">Prevopsit</option></select>
       <label>Grosime</label><select id="fT"><option value="">toate</option></select>
-      <label>Zinc</label><select id="fZ"><option value="">tot</option></select>
+      <label>Acoperire</label><select id="fZ"><option value="">toate</option></select>
       <label>Calitate</label><select id="fG"><option value="">toate</option></select>
       <label>Producător</label><select id="fP"><option value="">toți</option></select>
       <label>Kg</label><input id="fKgMin" placeholder="min" inputmode="numeric"><span style="color:var(--faint)">–</span><input id="fKgMax" placeholder="max" inputmode="numeric">
@@ -205,7 +211,7 @@ let cfg = JSON.parse(localStorage.getItem(LS_CFG) || "null");
 const DEFAULT_CFG = {
   client: "89f5aec6-a69e-4024-ad43-cbc9ccc2fbb5",
   tenant: "b319080a-7e7a-4086-9913-1dfdd1c52e17",
-  folder: "https://doladelacompany.sharepoint.com/sites/comm/Documente partajate/CERTIFICATE DE CALITATE/RULOU ZINCAT"
+  folder: "https://doladelacompany.sharepoint.com/sites/comm/Documente partajate/CERTIFICATE DE CALITATE"
 };
 if(!cfg) cfg = DEFAULT_CFG;
 let msalApp = null, account = null;
@@ -256,19 +262,25 @@ async function graph(path, opts={}){
 }
 
 /* ═══════════ folder & index pe SharePoint ═══════════ */
-function encodeShare(url){
-  return "u!"+btoa(unescape(encodeURIComponent(url))).replace(/=+$/,"").replace(/\//g,"_").replace(/\+/g,"-");
-}
+/* Rezolvare robustă: site (host + cale) → drive implicit → item după cale relativă.
+   Mai sigur decât „share link" fals-construit, care poate rezolva greșit când calea are spații. */
 async function resolveFolder(){
-  const res = await graph("/shares/"+encodeShare(cfg.folder)+"/driveItem?$select=id,name,webUrl,parentReference");
-  const it = await res.json();
+  const u = new URL(cfg.folder);
+  const parts = decodeURIComponent(u.pathname).replace(/^\/+|\/+$/g,"").split("/").filter(Boolean);
+  const si = parts.indexOf("sites");
+  if(si<0) throw new Error("Linkul de folder nu conține /sites/ — verifică-l în Setări.");
+  const sitePath = parts.slice(si, si+2).join("/");   // ex. "sites/comm"
+  const rest = parts.slice(si+3);                      // după numele bibliotecii ("Documente partajate")
+  const site = await (await graph(`/sites/${u.hostname}:/${sitePath}`)).json();
+  const itemPath = rest.map(encodeURIComponent).join("/");
+  const url = itemPath ? `/sites/${site.id}/drive/root:/${itemPath}` : `/sites/${site.id}/drive/root`;
+  const it = await (await graph(url)).json();
   folderRef = { driveId: it.parentReference.driveId, itemId: it.id, webUrl: it.webUrl, name: it.name };
 }
 async function loadIndex(){
   try{
-    const meta = await (await graph(`/drives/${folderRef.driveId}/items/${folderRef.itemId}:/${INDEX_FILE}?$select=id,@microsoft.graph.downloadUrl`)).json();
-    const dl = meta["@microsoft.graph.downloadUrl"];
-    INDEX = await (await fetch(dl)).json();
+    const meta = await (await graph(`/drives/${folderRef.driveId}/items/${folderRef.itemId}:/${INDEX_FILE}`)).json();
+    INDEX = await (await fetch(meta["@microsoft.graph.downloadUrl"])).json();
   }catch(e){
     INDEX = { ver:1, updated:null, files:{}, rows:[], pageIds:{} };
   }
@@ -308,18 +320,26 @@ function pageLines(tc){
   rows.sort((a,b)=>b.y-a.y);
   return rows.map(r=>r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s).join(" ").replace(/\s+/g," ").trim());
 }
-const numTR = s => { // "13.778,9" -> 13778.9 ; "6.250" -> 6250 ; "2,00" -> 2.0
+const numTR = s => { // "13.778,9" -> 13778.9 ; "6.250" -> 6250 ; "2,00" -> 2.0  (punct = separator de mii)
   s = s.replace(/\./g,"").replace(",",".");
   const v = parseFloat(s); return isNaN(v)?null:v;
+};
+const numDec = s => { // "2.00" sau "2,00" -> 2.0 ; "399.6" -> 399.6  (o singură virgulă zecimală, fără grupare de mii)
+  const v = parseFloat(String(s).replace(",","."));
+  return isNaN(v)?null:v;
 };
 function guessProducer(path, text){
   const p = path.toUpperCase();
   if(p.includes("TATMETAL")) return "Tatmetal (TR)";
   if(p.includes("MARCEGAGLIA")) return "Marcegaglia (IT)";
   if(p.includes("TEZCAN")) return "Tezcan (TR)";
+  if(p.includes("PRABHAT") || p.includes("PRAHBAT")) return "Prabhat (IN)";
+  if(p.includes("STEELOX")) return "Steelox";
   if(/TATMETAL/i.test(text)) return "Tatmetal (TR)";
   if(/MARCEGAGLIA/i.test(text)) return "Marcegaglia (IT)";
   if(/TEZCAN/i.test(text)) return "Tezcan (TR)";
+  if(/PRABHAT|PRAHBAT/i.test(text)) return "Prabhat (IN)";
+  if(/STEELOX/i.test(text)) return "Steelox";
   return "necunoscut";
 }
 /* — parsează o pagină: rânduri structurate + toate ID-urile numerice — */
@@ -330,53 +350,68 @@ function parsePage(lines, fullText, producer){
   if(mCert) cert = mCert[1];
 
   if(producer.startsWith("Marcegaglia")){
-    // EN 10168: B07 = lot/rulou ; C11 Re ; C12 Rm ; C13 A%
-    let re=null, rm=null, a=null, t=null, w=null, coat=null, grade=null;
-    const g = fullText.match(/\b(DX5\d[A-Z]?|S\d{3}GD|HX\d{3}[A-Z]*)\s*(?:\+\s*)?(Z[AF]?|ZM)?\s*/);
-    if(g) grade = g[1]+(g[2]?"+"+g[2]:"");
-    const dims = fullText.match(/(\d{1,2}[.,]\d{2})\s*[xX×*]\s*(\d{3,4})/);
-    if(dims){ t=numTR(dims[1]); w=parseInt(dims[2]); }
-    const cz = fullText.match(/\bZ\s?(\d{2,3})\b/); if(cz) coat="Z"+cz[1];
-    const c11 = fullText.match(/C11[^0-9]*(\d{2,3})/); if(c11) re=parseInt(c11[1]);
-    const c12 = fullText.match(/C12[^0-9]*(\d{2,3})/); if(c12) rm=parseInt(c12[1]);
-    const c13 = fullText.match(/C13[^0-9]*(\d{1,2}(?:[.,]\d)?)/); if(c13) a=numTR(c13[1]);
+    // EN 10168: rând "item batch kg" + rând "item batch Re Rm A%"
+    let t=null, w=null, coat=null, grade=null;
+    const b09 = fullText.match(/Material Description[^\n]*/i);
+    const src = b09 ? b09[0] : fullText;
+    const dm = src.match(/(\d{1,2}[.,]\d{1,2})\s*[xX×]\s*(\d{3,4})/);
+    if(dm){ t=numDec(dm[1]); w=parseInt(dm[2]); }
+    const g = src.match(/\b(DX5\d[A-Z]?|S\d{3}GD|HX\d{3}[A-Z]*)\b/) || fullText.match(/Material Quality:\s*([A-Z0-9+]+)/i);
+    if(g) grade = g[1];
+    const cz = src.match(/\bZ\s?(\d{2,3})\b/); if(cz) coat = "Z"+cz[1];
+    const batches = {};
     for(const ln of lines){
-      const b07 = ln.match(/B07\D*([A-Z0-9\-\/]{5,20})/);
-      if(b07){
-        const id = b07[1];
-        ids.add(id);
-        let kg=null; const rest2 = ln.replace(id,"");
-        let mk = rest2.match(/(\d{1,2}\.\d{3})(?:[.,]\d+)?\s*(?:kg)?/i);
-        if(!mk) mk = rest2.match(/\b(\d{4,5})\s*kg/i);
-        if(mk) kg=numTR(mk[1]);
-        rows.push({ id, kg, t, w, coat, grade, re, rm, a, cert });
-      }
+      let m = ln.match(/^(\d{1,3})\s+([A-Z0-9]{6,16})\s+(\d{3,6})$/);
+      if(m && !/^0[.,]/.test(m[3])){ const id=m[2]; batches[id]=batches[id]||{}; batches[id].kg=parseInt(m[3]); ids.add(id); continue; }
+      m = ln.match(/^(\d{1,3})\s+([A-Z0-9]{6,16})\s+(\d{2,3}(?:\.\d+)?)\s+(\d{2,3}(?:\.\d+)?)\s+(\d{1,2}(?:\.\d+)?)$/);
+      if(m){ const id=m[2]; batches[id]=batches[id]||{}; Object.assign(batches[id],{re:Math.round(numDec(m[3])),rm:Math.round(numDec(m[4])),a:numDec(m[5])}); ids.add(id); }
+    }
+    for(const id of Object.keys(batches)){
+      rows.push({ id, kg:batches[id].kg??null, t, w, coat, grade, re:batches[id].re??null, rm:batches[id].rm??null, a:batches[id].a??null, cert, culoare:null });
     }
   } else {
-    // Tatmetal & generic: un rând = un rulou cu ID de 12–15 cifre
+    // Tatmetal & generic: un rând = un rulou cu ID de 12–15 cifre.
+    // Certificatele PREVOPSITE au Re/Rm/A% + culoarea RAL pe rândul URMĂTOR (același nr. de linie);
+    // construim mai întâi o hartă "nr. linie → {re,rm,a,culoare}" din acele rânduri de continuare.
+    const contMap = {};
+    for(const ln2 of lines){
+      const cm = ln2.match(/^\s*(\d{1,3})\s+(\d{2,3})\s+(\d{2,3})\s+(\d{1,2}(?:[.,]\d)?)\s+(RAL\s?\d{3,4}|[A-Z]{2,4}\d{2,4})\b/i);
+      if(cm) contMap[cm[1]] = { re:parseInt(cm[2]), rm:parseInt(cm[3]), a:numDec(cm[4]), culoare:cm[5].replace(/\s+/g,"").toUpperCase() };
+    }
     for(const ln of lines){
       const mid = ln.match(/\b(\d{12,15})\b/);
       if(!mid) continue;
       const id = mid[1];
       ids.add(id);
       const rest = ln.replace(id,"");
-      let t=null,w=null,coat=null,grade=null,re=null,rm=null,a=null,kg=null;
-      const dims = rest.match(/(\d{1,2}[.,]\d{2})\s*[xX×*]\s*(\d{3,4})/);
-      if(dims){ t=numTR(dims[1]); w=parseInt(dims[2]); }
+      let t=null,w=null,coat=null,grade=null,re=null,rm=null,a=null,kg=null,culoare=null;
+      // dimensiuni: format uzual "2,00 /0,0787 1250 / 49,213" (metric/imperial); fallback pe "2,00 x 1250"
+      let dims = rest.match(/(\d{1,2}[.,]\d{2})\s*\/\s*[\d.,]+\s+(\d{3,4})\s*\/\s*[\d.,]+/);
+      if(dims){ t=numDec(dims[1]); w=parseInt(dims[2]); }
+      else { dims = rest.match(/(\d{1,2}[.,]\d{2})\s*[xX×*]\s*(\d{3,4})/); if(dims){ t=numDec(dims[1]); w=parseInt(dims[2]); } }
       const g = rest.match(/\b(DX5\d[A-Z]?|S\d{3}GD|HX\d{3}[A-Z]*)\b/);
       if(g) grade=g[1];
       const cz = rest.match(/\bZ\s?(\d{2,3})\b/);
       if(cz){
         coat="Z"+cz[1];
-        // după acoperire urmează Re, Rm, A%
+        // certificate zincate: Re, Rm, A% urmează direct pe același rând, imediat după acoperire
         const after = rest.slice(rest.indexOf(cz[0])+cz[0].length);
         const nums = after.match(/(\d{2,3})\s+(\d{2,3})\s+(\d{1,2}(?:[.,]\d)?)/);
-        if(nums){ re=parseInt(nums[1]); rm=parseInt(nums[2]); a=numTR(nums[3]); }
+        if(nums){ re=parseInt(nums[1]); rm=parseInt(nums[2]); a=numDec(nums[3]); }
+      }
+      // certificate prevopsite: dacă Re/Rm/A% nu s-au găsit pe rând, le luăm din rândul de continuare (culoare RAL)
+      if(re==null || rm==null || a==null){
+        const rowNumM = ln.match(/^\s*(\d{1,3})\s/);
+        if(rowNumM && contMap[rowNumM[1]]){
+          const c = contMap[rowNumM[1]];
+          if(re==null) re=c.re; if(rm==null) rm=c.rm; if(a==null) a=c.a;
+          culoare = c.culoare;
+        }
       }
       const mk = rest.match(/(\d{1,2}\.\d{3})(?:[.,]\d+)?\s*\//); // "6.250 /13.778,9"
       if(mk) kg=numTR(mk[1]);
       else { const mk2 = rest.match(/\b(\d{1,2}\.\d{3})\b/); if(mk2) kg=numTR(mk2[1]); }
-      rows.push({ id, kg, t, w, coat, grade, re, rm, a, cert });
+      rows.push({ id, kg, t, w, coat, grade, re, rm, a, cert, culoare });
     }
     // ID-uri suplimentare (ex. în antete) — le indexăm doar pentru căutare
     const all = fullText.match(/\b\d{12,15}\b/g) || [];
@@ -388,8 +423,9 @@ function parsePage(lines, fullText, producer){
 async function downloadPdfBytes(itemId){
   if(pdfCache.has(itemId)) return pdfCache.get(itemId);
   const p = (async()=>{
-    const meta = await (await graph(`/drives/${folderRef.driveId}/items/${itemId}?$select=id,@microsoft.graph.downloadUrl`)).json();
+    const meta = await (await graph(`/drives/${folderRef.driveId}/items/${itemId}`)).json();
     const res = await fetch(meta["@microsoft.graph.downloadUrl"]);
+    if(!res.ok) throw new Error("descărcare eșuată ("+res.status+")");
     return await res.arrayBuffer();
   })();
   pdfCache.set(itemId, p);
@@ -423,6 +459,7 @@ async function runScan(){
         INDEX.pageIds[f.id] = {};
         let rowsInFile = 0;
         let producer = guessProducer(f.path, "");
+        const categorie = /PREVOPSIT/i.test(f.path) ? "Prevopsit" : /ZINCAT/i.test(f.path) ? "Zincat" : "necunoscut";
         for(let pg=1; pg<=pdf.numPages; pg++){
           const page = await pdf.getPage(pg);
           const tc = await page.getTextContent();
@@ -431,7 +468,7 @@ async function runScan(){
           if(producer==="necunoscut") producer = guessProducer(f.path, fullText);
           const { rows, ids } = parsePage(lines, fullText, producer);
           for(const r of rows){
-            INDEX.rows.push([r.id, r.kg, r.t, r.w, r.coat, r.grade, r.re, r.rm, r.a, f.id, pg, r.cert, producer]);
+            INDEX.rows.push([r.id, r.kg, r.t, r.w, r.coat, r.grade, r.re, r.rm, r.a, f.id, pg, r.cert, producer, categorie, r.culoare||null]);
             rowsInFile++;
           }
           const rowIds = new Set(rows.map(r=>r.id));
@@ -455,7 +492,7 @@ async function runScan(){
 }
 
 /* ═══════════ căutare ═══════════ */
-function rowObj(r){ return { id:r[0], kg:r[1], t:r[2], w:r[3], coat:r[4], grade:r[5], re:r[6], rm:r[7], a:r[8], fid:r[9], pg:r[10], cert:r[11], prod:r[12] }; }
+function rowObj(r){ return { id:r[0], kg:r[1], t:r[2], w:r[3], coat:r[4], grade:r[5], re:r[6], rm:r[7], a:r[8], fid:r[9], pg:r[10], cert:r[11], prod:r[12], categorie:r[13]||null, culoare:r[14]||null }; }
 
 function fillFilters(){
   const uniq = (arr, fmt) => [...new Set(arr.filter(x=>x!=null))].sort((a,b)=>a>b?1:-1);
@@ -469,7 +506,7 @@ function fillFilters(){
 function doSearch(){
   if(!INDEX) return;
   const q = $("q").value.trim();
-  const fT=$("fT").value, fZ=$("fZ").value, fG=$("fG").value, fP=$("fP").value;
+  const fT=$("fT").value, fZ=$("fZ").value, fG=$("fG").value, fP=$("fP").value, fCat=$("fCat").value;
   const kmin = parseFloat($("fKgMin").value)||null, kmax = parseFloat($("fKgMax").value)||null;
   const qDigits = q.replace(/\D/g,"");
   const isIdQ = qDigits.length >= 4 && qDigits.length === q.replace(/\s/g,"").length;
@@ -481,12 +518,13 @@ function doSearch(){
     if(fZ && r.coat!==fZ) continue;
     if(fG && r.grade!==fG) continue;
     if(fP && r.prod!==fP) continue;
+    if(fCat && r.categorie!==fCat) continue;
     if(kmin!=null && (r.kg==null || r.kg<kmin)) continue;
     if(kmax!=null && (r.kg==null || r.kg>kmax)) continue;
     if(q){
       if(isIdQ){ if(!String(r.id).includes(qDigits)) continue; }
       else {
-        const hay = [r.id,r.grade,r.coat,r.cert,r.prod,INDEX.files[r.fid]?.n].join(" ").toLowerCase();
+        const hay = [r.id,r.grade,r.coat,r.culoare,r.cert,r.prod,r.categorie,INDEX.files[r.fid]?.n].join(" ").toLowerCase();
         if(!hay.includes(q.toLowerCase())) continue;
       }
     }
@@ -516,13 +554,17 @@ function render(rows, pageHits, q){
     res.innerHTML = `<div class="empty"><div class="big">⌕</div>${total? "Niciun rulou nu se potrivește. Verifică numărul sau lărgește filtrele." : "Indexul e gol — apasă „⛏ Scanează certificatele” (o face administratorul, o singură dată)."}</div>`;
     return;
   }
-  let h = `<table><thead><tr><th>Nr. rulou</th><th>Dim.</th><th>Zinc</th><th style="text-align:right">Kg</th><th>Calitate</th><th style="text-align:right">Re</th><th style="text-align:right">Rm</th><th style="text-align:right">A%</th><th>Certificat / fișier</th><th></th></tr></thead><tbody>`;
+  let h = `<table><thead><tr><th>Nr. rulou</th><th>Tip</th><th>Dim.</th><th>Acoperire</th><th style="text-align:right">Kg</th><th>Calitate</th><th style="text-align:right">Re</th><th style="text-align:right">Rm</th><th style="text-align:right">A%</th><th>Certificat / fișier</th><th></th></tr></thead><tbody>`;
   for(const r of rows.slice(0,300)){
     const f = INDEX.files[r.fid]||{};
+    const tip = r.categorie==="Prevopsit" ? `<span class="badge tip-prevopsit">Prevopsit</span>`
+              : r.categorie==="Zincat" ? `<span class="badge tip-zincat">Zincat</span>` : "—";
+    const acoperire = r.coat && r.culoare ? `${r.coat} · ${r.culoare}` : (r.coat || r.culoare || null);
     h += `<tr onclick="openViewer('${r.fid}',${r.pg},'${esc(r.id)}')">
       <td class="id">${esc(r.id)}</td>
+      <td>${tip}</td>
       <td class="num">${r.t!=null?fmtN(r.t)+"×"+(r.w||"?"):"—"}</td>
-      <td>${r.coat?`<span class="badge">${esc(r.coat)}</span>`:"—"}</td>
+      <td>${acoperire?`<span class="badge">${esc(acoperire)}</span>`:"—"}</td>
       <td class="num">${fmtKg(r.kg)}</td>
       <td>${esc(r.grade||"—")}</td>
       <td class="num">${r.re??"—"}</td><td class="num">${r.rm??"—"}</td><td class="num">${fmtN(r.a)}</td>
@@ -532,7 +574,7 @@ function render(rows, pageHits, q){
   for(const ph of pageHits.slice(0,50)){
     const f = INDEX.files[ph.fid]||{};
     h += `<tr onclick="openViewer('${ph.fid}',${ph.pg},'${esc(ph.id)}')">
-      <td class="id src-page">${esc(ph.id)}</td><td colspan="7" style="color:var(--muted)">găsit în textul paginii (fără rând structurat)</td>
+      <td class="id src-page">${esc(ph.id)}</td><td colspan="8" style="color:var(--steel)">găsit în textul paginii (fără rând structurat)</td>
       <td class="file">${esc(f.n||"?")}</td><td><button class="pagebtn">pag. ${ph.pg} →</button></td></tr>`;
   }
   h += "</tbody></table>";
@@ -638,10 +680,10 @@ $("btnLogin").onclick = ()=>{ initMsalOnly(); login(); };
 $("btnScan").onclick = ()=> $("scanPanel").classList.toggle("open");
 $("scanStart").onclick = runScan;
 $("scanStop").onclick = ()=>{ scanAbort = true; };
-["q","fT","fZ","fG","fP","fKgMin","fKgMax"].forEach(id=>{
+["q","fT","fZ","fG","fP","fCat","fKgMin","fKgMax"].forEach(id=>{
   $(id).addEventListener("input", ()=>{ clearTimeout(window._dq); window._dq = setTimeout(doSearch, 180); });
 });
-$("fClear").onclick = ()=>{ ["fT","fZ","fG","fP"].forEach(i=>$(i).value=""); ["fKgMin","fKgMax","q"].forEach(i=>$(i).value=""); doSearch(); };
+$("fClear").onclick = ()=>{ ["fT","fZ","fG","fP","fCat"].forEach(i=>$(i).value=""); ["fKgMin","fKgMax","q"].forEach(i=>$(i).value=""); doSearch(); };
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("vClose").click(); });
 
 /* pornire */
