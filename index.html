@@ -206,7 +206,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 /* ═══════════ config & stare ═══════════ */
 const LS_CFG = "cert_cfg_v2";
 const INDEX_FILE = "_index-rulouri.json";
-let cfg = JSON.parse(localStorage.getItem(LS_CFG) || "null");
 /* Config implicit — valabil pentru toți colegii; Client ID și tenant nu sunt secrete
    (securitatea o face login-ul Microsoft + drepturile fiecăruia din SharePoint). */
 const DEFAULT_CFG = {
@@ -214,11 +213,21 @@ const DEFAULT_CFG = {
   tenant: "b319080a-7e7a-4086-9913-1dfdd1c52e17",
   folder: "https://doladelacompany.sharepoint.com/sites/comm/Documente partajate/CERTIFICATE DE CALITATE"
 };
-if(!cfg) cfg = DEFAULT_CFG;
 /* Setările (Client ID / Tenant / folder) sunt fixe pentru toți colegii — nu pot fi deschise sau
    modificate din interfața obișnuită, ca să nu poată fi greșite din greșeală. Doar administratorul,
    folosind linkul cu ?admin=1, poate deschide panoul de configurare. */
 const ADMIN_MODE = new URLSearchParams(location.search).get("admin") === "1";
+/* cfg este ÎNTOTDEAUNA configurația implicită, pentru toată lumea — indiferent ce ar avea
+   salvat local browserul (nu se poate "strica" din greșeală, nu depinde de ce s-a completat
+   cândva). Singura excepție: administratorul poate suprascrie temporar, DOAR în ?admin=1,
+   și DOAR dacă suprascrierea salvată are toate cele 3 câmpuri completate — altfel se ignoră. */
+let cfg = DEFAULT_CFG;
+if(ADMIN_MODE){
+  try{
+    const saved = JSON.parse(localStorage.getItem(LS_CFG) || "null");
+    if(saved && saved.client && saved.tenant && saved.folder) cfg = saved;
+  }catch(_){ /* valoare locală coruptă — ignorată, rămâne DEFAULT_CFG */ }
+}
 let msalApp = null, account = null;
 let folderRef = null;          // {driveId, itemId, webUrl}
 let INDEX = null;              // {ver, updated, files:{}, rows:[], pageIds:{}}
