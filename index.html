@@ -603,7 +603,8 @@ function render(rows, pageHits, fileHits, q){
       const tip = r.categorie==="Prevopsit" ? `<span class="badge tip-prevopsit">Prevopsit</span>`
                 : r.categorie==="Zincat" ? `<span class="badge tip-zincat">Zincat</span>` : "—";
       const acoperire = r.coat && r.culoare ? `${r.coat} · ${r.culoare}` : (r.coat || r.culoare || null);
-      h += `<tr onclick="openViewer('${r.fid}',${r.pg},'${esc(r.id)}')">
+      const dimStr = r.t!=null ? fmtN(r.t)+"x"+(r.w||"?") : "";
+      h += `<tr onclick="openViewer('${r.fid}',${r.pg},'${esc(r.id)}','${esc(dimStr)}')">
         <td class="id">${esc(r.id)}</td>
         <td>${tip}</td>
         <td class="num">${r.t!=null?fmtN(r.t)+"×"+(r.w||"?"):"—"}</td>
@@ -637,9 +638,9 @@ function render(rows, pageHits, fileHits, q){
 
 /* ═══════════ vizualizator pagină ═══════════ */
 let vState = null; // {fid, pg, scale, pdf}
-async function openViewer(fid, pg, coilId){
+async function openViewer(fid, pg, coilId, dim){
   const f = INDEX.files[fid]||{};
-  $("vTitle").innerHTML = `Rulou <b>${esc(coilId)}</b> — pagina <b>${pg}</b> din ${f.pg||"?"}`;
+  $("vTitle").innerHTML = `Rulou <b>${esc(coilId)}</b>${dim?` — <b>${esc(dim)} mm</b>`:""} — pagina <b>${pg}</b> din ${f.pg||"?"}`;
   $("vSub").textContent = (f.p?f.p.replace(/^\//,"")+" / ":"")+(f.n||"");
   $("vOpenFull").href = f.u||"#";
   $("viewer").classList.add("open");
@@ -647,7 +648,7 @@ async function openViewer(fid, pg, coilId){
   try{
     const bytes = await downloadPdfBytes(fid);
     const pdf = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
-    vState = { fid, pg, coilId, scale: 1.35, pdf, name: f.n };
+    vState = { fid, pg, coilId, dim, scale: 1.35, pdf, name: f.n };
     await renderPage();
   }catch(e){ $("vLoad").textContent = "Nu am putut încărca PDF-ul: "+e.message; }
 }
@@ -681,7 +682,7 @@ $("vDownload").onclick = async ()=>{
     const blob = new Blob([await out.save()], { type:"application/pdf" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `rulou-${vState.coilId}-pag${vState.pg}.pdf`;
+    a.download = `rulou-${vState.coilId}${vState.dim?"-"+vState.dim.replace(/[^0-9x]/gi,""):""}-pag${vState.pg}.pdf`;
     a.click(); URL.revokeObjectURL(a.href);
   }catch(e){ toast("Descărcarea paginii a eșuat: "+e.message); }
 };
