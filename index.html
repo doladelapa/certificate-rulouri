@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOLADELA — Trasabilitate producție</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{--blue:#1a4f8b;--bg:#f2f4f7;--card:#fff;--ok:#1e7d3c;--warn:#b8860b;--bad:#b02a2a;--muted:#667085;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif}
+  body{background:var(--bg);color:#1d2939;padding-bottom:40px}
+  header{background:var(--blue);color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  header h1{font-size:20px}
+  header span{font-size:13px;opacity:.85}
+  header .hdr-right{display:flex;align-items:center;gap:14px}
+  header button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer}
+  header button:hover{background:rgba(255,255,255,.28)}
+  .statusbar{background:#fff;border-bottom:1px solid #d0d5dd;padding:8px 24px;font-size:12.5px;color:var(--muted);display:flex;gap:10px;align-items:center}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad)}
+  .dot.ok{background:var(--ok)}
+  .dot.pending{background:var(--warn)}
+  main{max-width:1150px;margin:20px auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid #d0d5dd;border-radius:10px;padding:20px;margin-bottom:16px}
+  .search-box{display:flex;gap:10px}
+  .search-box input{flex:1;font-size:20px;padding:12px 16px;border:2px solid var(--blue);border-radius:8px}
+  .search-box button{font-size:16px;padding:0 24px;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer}
+  .hint{color:var(--muted);font-size:13px;margin-top:8px}
+  h2{font-size:17px;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{padding:8px 10px;border-bottom:1px solid #e4e7ec;text-align:left}
+  th{background:#f8f9fb;font-size:12px;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;position:sticky;top:0}
+  th:hover{color:var(--blue)}
+  th.sorted{color:var(--blue)}
+  tr.row:hover td{background:#f5f8fc}
+  td{white-space:nowrap}
+  .btn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:12px 22px;font-size:15px;cursor:pointer;margin-top:14px}
+  .btn.gray{background:#667085}
+  .filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .filterbar select,.filterbar input{padding:9px 11px;border:1px solid #d0d5dd;border-radius:6px;font-size:14px}
+  .filterbar input{flex:1;min-width:180px}
+  .pager{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}
+  .pager button{padding:6px 14px;border:1px solid #d0d5dd;background:#fff;border-radius:6px;cursor:pointer}
+  .pager button:disabled{opacity:.4;cursor:default}
+  .flash{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e7d3c;color:#fff;padding:12px 26px;border-radius:8px;font-size:15px;display:none}
+  .fallback-link{color:var(--blue);cursor:pointer;text-decoration:underline;font-size:12.5px}
+  #fileInput{display:none}
+  @media(max-width:600px){.search-box input{font-size:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>DOLADELA — Trasabilitate producție</h1>
+  <div class="hdr-right">
+    <span id="dbinfo"></span>
+    <button onclick="init()" title="Reîncearcă preluarea datelor din SharePoint">⟳ Reîncarcă datele</button>
+  </div>
+</header>
+<div class="statusbar">
+  <span class="dot pending" id="statusDot"></span>
+  <span id="statusText">Se preia din SharePoint...</span>
+  <span style="flex:1"></span>
+  <span class="fallback-link" id="fallbackLink" style="display:none" onclick="document.getElementById('fileInput').click()">📁 fișierul nu s-a putut prelua automat — alege-l manual din folderul sincronizat</span>
+  <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls">
+</div>
+<main>
+
+<div class="card">
+  <h2>Caută în trasabilitate</h2>
+  <div class="search-box">
+    <input id="q" placeholder="ex. MARCKON, 9817, DX51D, PROFILARE..." autofocus>
+    <button onclick="applyFilters()">Caută</button>
+  </div>
+  <div class="filterbar" style="margin-top:12px">
+    <select id="fClient"><option value="">Toți clienții</option></select>
+    <select id="fCat"><option value="">Toate categoriile</option></select>
+    <span class="hint" id="rowCount" style="margin-left:auto"></span>
+  </div>
+  <div style="overflow-x:auto;max-height:62vh;overflow-y:auto;margin-top:6px">
+    <table id="histTable"><thead></thead><tbody></tbody></table>
+  </div>
+  <div class="pager">
+    <span id="pageInfo"></span>
+    <div><button id="prevPage">‹ Anterior</button> <button id="nextPage">Următor ›</button></div>
+  </div>
+  <button class="btn gray" onclick="exportCsv()">Exportă rezultatul filtrat (CSV)</button>
+</div>
+
+</main>
+<div class="flash" id="flash"></div>
+
+<script>
+// ============ SURSA PRESETATĂ (SharePoint) ============
+const SP_FILE_URL = "https://doladelacompany.sharepoint.com/sites/comm/Documente%20partajate/Altele/Diverse/Template%20I%20%26%20B/BAZA%20DASHBOARD/PORTAL/PRODUCTIE/RAPOARTE%20PRODUCTIE/Istoric%20INTERN.xlsx";
+
+let RAW = [], HEADERS = [], FILTERED = [];
+let sortCol = null, sortDir = 1, page = 0;
+const PAGE_SIZE = 40;
+
+function flash(msg){const f=document.getElementById("flash");f.textContent=msg;f.style.display="block";setTimeout(()=>f.style.display="none",2500)}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+function setStatus(state, text){
+  const dot = document.getElementById("statusDot");
+  dot.className = "dot" + (state==="ok" ? " ok" : state==="pending" ? " pending" : "");
+  document.getElementById("statusText").textContent = text;
+  document.getElementById("fallbackLink").style.display = state==="fail" ? "inline" : "none";
+}
+
+// ============ PARSARE WORKBOOK (SheetJS) ============
+function parseWorkbook(arrayBuffer){
+  const wb = XLSX.read(arrayBuffer, {type:"array", cellDates:true});
+  let rows = [];
+  wb.SheetNames.forEach(sheetName=>{
+    const ws = wb.Sheets[sheetName];
+    const grid = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:""});
+    if(!grid.length) return;
+    let headerIdx = grid.findIndex(r => r.some(c => typeof c === "string" && /CLIENT|NR\s*CMD|ARTICOL|RULOU|RAPORT/i.test(c)));
+    if(headerIdx === -1) headerIdx = 0;
+    const headers = grid[headerIdx].map((h,i)=> (h===""||h==null) ? ("Col"+(i+1)) : String(h).trim());
+    for(let i=headerIdx+1;i<grid.length;i++){
+      const r = grid[i];
+      if(!r || r.every(c=>c===""||c==null)) continue;
+      const obj = {};
+      headers.forEach((h,idx)=>{
+        let v = r[idx];
+        if(v instanceof Date) v = v.toLocaleDateString("ro-RO");
+        obj[h] = (v===undefined||v===null) ? "" : v;
+      });
+      rows.push(obj);
+    }
+  });
+  return rows;
+}
+
+function buildHeaders(rows){
+  const set = new Set();
+  rows.forEach(r=> Object.keys(r).forEach(k=> set.add(k)));
+  return Array.from(set);
+}
+
+// ============ ÎNCĂRCARE AUTOMATĂ DIN SHAREPOINT ============
+async function init(){
+  setStatus("pending", "Se preia " + "Istoric INTERN.xlsx" + " din SharePoint...");
+  try{
+    const url = SP_FILE_URL + (SP_FILE_URL.includes("?") ? "&" : "?") + "download=1";
+    const res = await fetch(url, {mode:"cors", credentials:"include"});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const buf = await res.arrayBuffer();
+    RAW = parseWorkbook(buf);
+    if(!RAW.length) throw new Error("Fișier gol sau necitibil");
+    afterLoad("SharePoint (automat)");
+  }catch(err){
+    console.warn("Preluare automată eșuată:", err);
+    setStatus("fail", "Nu s-a putut prelua automat din SharePoint (autentificare/CORS blocate de browser). Folosește selectorul manual din dreapta →");
+  }
+}
+
+document.getElementById("fileInput").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  setStatus("pending", "Se citește " + file.name + "...");
+  try{
+    const buf = await file.arrayBuffer();
+    RAW = parseWorkbook(buf);
+    afterLoad("fișier local: " + file.name);
+  }catch(err){
+    setStatus("fail", "Eroare la citirea fișierului local: " + (err.message||err));
+  }
+});
+
+function afterLoad(sourceLabel){
+  HEADERS = buildHeaders(RAW);
+  document.getElementById("dbinfo").textContent = RAW.length + " rânduri";
+  setStatus("ok", RAW.length + " rânduri încărcate din " + sourceLabel + " · " + new Date().toLocaleString("ro-RO"));
+  populateFilterSelects();
+  applyFilters();
+}
+
+// ============ FILTRE / TABEL ============
+function populateFilterSelects(){
+  const clientCol = HEADERS.find(h=>/^CLIENT$/i.test(h)) || HEADERS.find(h=>/CLIENT/i.test(h));
+  const catCol = HEADERS.find(h=>/CATEGORIE/i.test(h));
+  window.__cols = {clientCol, catCol};
+  const clients = clientCol ? Array.from(new Set(RAW.map(r=>r[clientCol]).filter(Boolean))).sort() : [];
+  const cats = catCol ? Array.from(new Set(RAW.map(r=>r[catCol]).filter(Boolean))).sort() : [];
+  document.getElementById("fClient").innerHTML = '<option value="">Toți clienții</option>' + clients.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  document.getElementById("fCat").innerHTML = '<option value="">Toate categoriile</option>' + cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+}
+
+function applyFilters(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const client = document.getElementById("fClient").value;
+  const cat = document.getElementById("fCat").value;
+  const {clientCol, catCol} = window.__cols || {};
+  FILTERED = RAW.filter(r=>{
+    if(client && clientCol && r[clientCol] !== client) return false;
+    if(cat && catCol && r[catCol] !== cat) return false;
+    if(q && !HEADERS.some(h => String(r[h] ?? "").toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(sortCol){
+    FILTERED.sort((a,b)=>{
+      const na = parseFloat(a[sortCol]), nb = parseFloat(b[sortCol]);
+      if(!isNaN(na) && !isNaN(nb)) return (na-nb)*sortDir;
+      return String(a[sortCol]??"").localeCompare(String(b[sortCol]??""))*sortDir;
+    });
+  }
+  page = 0;
+  renderTable();
+}
+document.getElementById("fClient").addEventListener("change", applyFilters);
+document.getElementById("fCat").addEventListener("change", applyFilters);
+document.getElementById("q").addEventListener("keydown", e=>{ if(e.key==="Enter") applyFilters(); });
+
+function renderTable(){
+  const thead = document.querySelector("#histTable thead");
+  thead.innerHTML = "<tr>" + HEADERS.map(h=>`<th data-col="${esc(h)}" class="${h===sortCol?'sorted':''}">${esc(h)}${h===sortCol ? (sortDir>0?' ▲':' ▼') : ''}</th>`).join("") + "</tr>";
+  thead.querySelectorAll("th").forEach(th=>th.addEventListener("click", ()=>{
+    const col = th.dataset.col;
+    if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+    applyFilters();
+  }));
+  const start = page*PAGE_SIZE;
+  const slice = FILTERED.slice(start, start+PAGE_SIZE);
+  document.querySelector("#histTable tbody").innerHTML = slice.map(r=>
+    "<tr class='row'>" + HEADERS.map(h=>`<td>${esc(r[h] ?? "")}</td>`).join("") + "</tr>"
+  ).join("") || `<tr><td colspan="${HEADERS.length||1}" class="hint">Niciun rezultat.</td></tr>`;
+  document.getElementById("rowCount").textContent = FILTERED.length + " rânduri (din " + RAW.length + ")";
+  const totalPages = Math.max(1, Math.ceil(FILTERED.length/PAGE_SIZE));
+  document.getElementById("pageInfo").textContent = `Pagina ${page+1} / ${totalPages}`;
+  document.getElementById("prevPage").disabled = page<=0;
+  document.getElementById("nextPage").disabled = page>=totalPages-1;
+}
+document.getElementById("prevPage").addEventListener("click", ()=>{ if(page>0){page--; renderTable();} });
+document.getElementById("nextPage").addEventListener("click", ()=>{
+  const totalPages = Math.max(1, Math.ceil(FILTERED.length/PAGE_SIZE));
+  if(page<totalPages-1){page++; renderTable();}
+});
+
+function exportCsv(){
+  if(!FILTERED.length){ flash("Nimic de exportat"); return; }
+  const rows = [HEADERS.join(";")].concat(FILTERED.map(r=>HEADERS.map(h=>String(r[h]??"").replace(/;/g,",")).join(";")));
+  const blob = new Blob(["\uFEFF"+rows.join("\n")], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download="trasabilitate-export.csv"; a.click(); URL.revokeObjectURL(url);
+  flash("Export gata");
+}
+
+init();
+</script>
+</body>
+</html>
